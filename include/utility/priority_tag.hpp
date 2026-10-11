@@ -1,6 +1,6 @@
 //Copyright (c) 2026 CB604BL
-#ifndef CEPO_TEMPLATE_TOOLS_PRIORITY_TAG_HPP
-#define CEPO_TEMPLATE_TOOLS_PRIORITY_TAG_HPP
+#ifndef CEPO_UTILITY_PRIORITY_TAG_HPP
+#define CEPO_UTILITY_PRIORITY_TAG_HPP
 
 #include "configs/namespace_macro.h"
 #include <cstddef>
@@ -15,4 +15,4 @@ struct priority_tag<0> {};
 
 CEPO_NAMESPACE_END;
 
-#endif //CEPO_TEMPLATE_TOOLS_PRIORITY_TAG_HPP
+#endif //CEPO_UTILITY_PRIORITY_TAG_HPP

@@ -6,7 +6,7 @@
 #include "callable/has_unoverloaded_operator.hpp"
 #include "callable/t_tags.hpp"
 #include "configs/namespace_macro.h"
-#include "template_tools/always_false.hpp"
+#include "utility/always_false.hpp"
 #include <cstddef>
 #include <type_traits>
 

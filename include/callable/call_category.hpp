@@ -4,7 +4,7 @@
 
 #include "callable/call_result.hpp"
 #include "configs/namespace_macro.h"
-#include "template_tools/priority_tag.hpp"
+#include "utility/priority_tag.hpp"
 #include <type_traits>
 
 CEPO_NAMESPACE_START;

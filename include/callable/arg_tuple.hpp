@@ -39,7 +39,7 @@ public:
 	static constexpr std::size_t size = sizeof...(Args);
 
 	template<std::size_t index>
-	struct get_type_at
+	struct at
 	{
 		static_assert(
 			sizeof...(Args) != 0,

@@ -1,24 +1,15 @@
-#include "callable/is_callable.hpp"
-#include "callable/traits.hpp"
-#include <cstdio>
+#include "memory/make_unique.hpp"
+#include "type_traits/is_bounded_array.hpp"
 #include <string>
 #include <type_traits>
-#include <utility>
-#include <callable/call.hpp>
 
-void func() noexcept {}
-
-struct FuncType
+struct t
 {
-
-	void operator()() noexcept
-	{
-		std::puts("123");
-	}
+	//t() = delete;
 };
 
 auto main() -> int
 {
-	cepo::call(func);
-	static_assert(cepo::is_nothrow_callable<decltype(func)>::value, "");
+	auto str = cepo::make_unique<t[5]>();
+	//static_assert(std::is_default_constructible<t>::value, "");
 }

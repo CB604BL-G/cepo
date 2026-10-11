@@ -5,7 +5,7 @@
 #include "callable/call_category_macros.hpp"
 #include "callable/is_callable.hpp"
 #include "configs/namespace_macro.h"
-#include "template_tools/priority_tag.hpp"
+#include "utility/priority_tag.hpp"
 
 CEPO_NAMESPACE_START;
 
