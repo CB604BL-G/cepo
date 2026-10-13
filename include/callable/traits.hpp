@@ -17,7 +17,7 @@ struct callable_traits
 {
 	static_assert(
 		always_false<Ts...>::value,
-		"cepo::callable_traits: Bro, how the hell did you match up with the master template?"
+		"cepo::callable_traits: Unable to match corresponding template specialization"
 	);
 };
 

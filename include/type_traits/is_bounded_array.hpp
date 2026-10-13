@@ -14,12 +14,6 @@ struct is_bounded_array : std::false_type{};
 template<typename T, std::size_t N>
 struct is_bounded_array<T[N]> : std::true_type{};
 
-template<typename T>
-struct is_unbounded_array : std::false_type{};
-
-template<typename T>
-struct is_unbounded_array<T[]> : std::true_type{};
-
 CEPO_NAMESPACE_END;
 
 #endif //CEPO_TYPE_TRAITS_IS_BOUNDED_ARRAY_HPP
