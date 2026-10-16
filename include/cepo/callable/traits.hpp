@@ -2,15 +2,15 @@
 #ifndef CEPO_CALLABLE_TRAITS_HPP
 #define CEPO_CALLABLE_TRAITS_HPP
 
-#include "callable/arg_tuple.hpp"
-#include "callable/has_unoverloaded_operator.hpp"
-#include "callable/t_tags.hpp"
-#include "configs/namespace_macro.h"
-#include "utility/always_false.hpp"
+#include "cepo/callable/arg_tuple.hpp"
+#include "cepo/callable/has_unoverloaded_operator.hpp"
+#include "cepo/callable/t_tags.hpp"
+#include "cepo/configs/namespace_macro.h"
+#include "cepo/utility/always_false.hpp"
 #include <cstddef>
 #include <type_traits>
 
-CEPO_NAMESPACE_START
+CEPO_NAMESPACE_START;
 
 template<typename... Ts>
 struct callable_traits
@@ -438,24 +438,24 @@ template<typename F>
 struct callable_traits<F>
 	: callable_traits<
 		typename std::conditional<std::is_class<F>::value,
-			callable::is_class_type, callable::is_not_class_type
+			impl::is_class_type, impl::is_not_class_type
 		>::type,
 		F
 	>
 {};
 
 template<typename F>
-struct callable_traits<callable::is_class_type, F>
+struct callable_traits<impl::is_class_type, F>
 	: callable_traits<
-		typename std::conditional<callable::has_unoverloaded_operator<F>::value,
-			callable::is_with_a_unique_operator, callable::is_not_with_a_unique_operator
+		typename std::conditional<impl::has_unoverloaded_operator<F>::value,
+			impl::is_with_a_unique_operator, impl::is_not_with_a_unique_operator
 		>::type,
 		F
 	>
 {};
 
 template<typename F>
-struct callable_traits<callable::is_not_class_type, F>
+struct callable_traits<impl::is_not_class_type, F>
 {
 	static_assert(
 		always_false<F>::value,
@@ -463,7 +463,7 @@ struct callable_traits<callable::is_not_class_type, F>
 };
 
 template<typename F>
-struct callable_traits<callable::is_not_with_a_unique_operator, F>
+struct callable_traits<impl::is_not_with_a_unique_operator, F>
 {
 	static_assert(
 		always_false<F>::value,
@@ -471,7 +471,7 @@ struct callable_traits<callable::is_not_with_a_unique_operator, F>
 };
 
 template<typename F>
-struct callable_traits<callable::is_with_a_unique_operator, F>
+struct callable_traits<impl::is_with_a_unique_operator, F>
 	: callable_traits<decltype(&F::operator())>
 {};
 
@@ -652,6 +652,6 @@ constexpr bool callable_traits<Ret(T::*)(Args..., ...) volatile &&>::is_c_style_
 template<typename T, typename Ret, typename... Args>
 constexpr bool callable_traits<Ret(T::*)(Args..., ...) const volatile &&>::is_c_style_variadic_function;
 
-CEPO_NAMESPACE_END
+CEPO_NAMESPACE_END;
 
 #endif //CEPO_CALLABLE_TRAITS_HPP

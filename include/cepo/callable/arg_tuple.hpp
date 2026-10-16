@@ -2,7 +2,7 @@
 #ifndef CEPO_CALLABLE_ARG_TUPLE_HPP
 #define CEPO_CALLABLE_ARG_TUPLE_HPP
 
-#include "configs/namespace_macro.h"
+#include "cepo/configs/namespace_macro.h"
 #include <cstddef>
 
 CEPO_NAMESPACE_START;

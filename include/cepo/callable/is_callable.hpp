@@ -2,9 +2,9 @@
 #ifndef CEPO_CALLABLE_IS_CALLABLE_HPP
 #define CEPO_CALLABLE_IS_CALLABLE_HPP
 
-#include "callable/call_category_macros.hpp"
-#include "configs/namespace_macro.h"
-#include "utility/priority_tag.hpp"
+#include "cepo/callable/call_category_macros.hpp"
+#include "cepo/configs/namespace_macro.h"
+#include "cepo/utility/priority_tag.hpp"
 #include <type_traits>
 
 CEPO_NAMESPACE_START;

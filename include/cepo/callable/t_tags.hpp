@@ -2,11 +2,11 @@
 #ifndef CEPO_CALLABLE_T_TAGS_HPP
 #define CEPO_CALLABLE_T_TAGS_HPP
 
-#include "configs/namespace_macro.h"
+#include "cepo/configs/namespace_macro.h"
 
-CEPO_NAMESPACE_START
+CEPO_NAMESPACE_START;
 
-namespace callable
+namespace impl
 {
 	struct is_not_class_type{};
 	struct is_class_type{};
@@ -14,6 +14,6 @@ namespace callable
 	struct is_with_a_unique_operator{};
 }
 
-CEPO_NAMESPACE_END
+CEPO_NAMESPACE_END;
 
 #endif //CEPO_CALLABLE_T_TAGS_HPP

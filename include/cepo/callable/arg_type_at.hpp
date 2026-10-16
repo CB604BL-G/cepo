@@ -2,8 +2,8 @@
 #ifndef CEPO_CALLABLE_ARG_TYPE_AT_HPP
 #define CEPO_CALLABLE_ARG_TYPE_AT_HPP
 
-#include "callable/traits.hpp"
-#include "configs/namespace_macro.h"
+#include "cepo/callable/traits.hpp"
+#include "cepo/configs/namespace_macro.h"
 #include <cstddef>
 
 CEPO_NAMESPACE_START;

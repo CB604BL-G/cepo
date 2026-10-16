@@ -2,7 +2,7 @@
 #ifndef CEPO_TYPE_TRAITS_IS_UNBOUNDED_ARRAY_HPP
 #define CEPO_TYPE_TRAITS_IS_UNBOUNDED_ARRAY_HPP
 
-#include "configs/namespace_macro.h"
+#include "cepo/configs/namespace_macro.h"
 #include <type_traits>
 
 CEPO_NAMESPACE_START;

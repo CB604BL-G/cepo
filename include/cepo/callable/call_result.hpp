@@ -2,10 +2,10 @@
 #ifndef CEPO_CALLABLE_CALL_RESULT_HPP
 #define CEPO_CALLABLE_CALL_RESULT_HPP
 
-#include "callable/call_category_macros.hpp"
-#include "callable/is_callable.hpp"
-#include "configs/namespace_macro.h"
-#include "utility/priority_tag.hpp"
+#include "cepo/callable/call_category_macros.hpp"
+#include "cepo/callable/is_callable.hpp"
+#include "cepo/configs/namespace_macro.h"
+#include "cepo/utility/priority_tag.hpp"
 
 CEPO_NAMESPACE_START;
 
@@ -18,14 +18,14 @@ CEPO_NAMESPACE_START;
 #define POINTER_TO_MEMBER_CALL_BY_POINTER(F, Ptr, Args) \
 	CEPO_CALLABLE_CALL_CATEGORY_EXPR_POINTER_TO_MEMBER_CALL_BY_POINTER(F, Ptr, Args)
 
-namespace callable
+namespace impl
 {
 	//to avoid hard errors
 	template<bool callable, typename F, typename... Args>
-	struct call_result_impl {};
+	struct call_result {};
 
 	template<typename F, typename... Args>
-	struct call_result_impl<true, F, Args...>
+	struct call_result<true, F, Args...>
 	{
 	private:
 		template<typename F_T, typename... Args_T>
@@ -47,7 +47,7 @@ namespace callable
 
 template<typename F, typename... Args>
 struct call_result
-	: callable::call_result_impl<is_callable<F, Args...>::value, F, Args...>
+	: impl::call_result<is_callable<F, Args...>::value, F, Args...>
 {};
 
 #undef BASIC_CALL

@@ -2,14 +2,14 @@
 #ifndef CEPO_CALLABLE_HAS_UNOVERLOADED_OPERATOR_HPP
 #define CEPO_CALLABLE_HAS_UNOVERLOADED_OPERATOR_HPP
 
-#include "configs/namespace_macro.h"
+#include "cepo/configs/namespace_macro.h"
 #include <type_traits>
 
-CEPO_NAMESPACE_START
+CEPO_NAMESPACE_START;
 
 //You can also think of
 //the template operator as a form of overloading
-namespace callable
+namespace impl
 {
 	template<typename T>
 	struct has_unoverloaded_operator
@@ -30,6 +30,7 @@ namespace callable
 	template<typename T>
 	constexpr bool has_unoverloaded_operator<T>::value;
 }
-CEPO_NAMESPACE_END
+
+CEPO_NAMESPACE_END;
 
 #endif //CEPO_CALLABLE_HAS_UNOVERLOADED_OPERATOR_HPP

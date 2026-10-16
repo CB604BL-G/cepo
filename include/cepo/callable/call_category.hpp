@@ -2,19 +2,20 @@
 #ifndef CEPO_CALLABLE_CALL_CATEGORY_HPP
 #define CEPO_CALLABLE_CALL_CATEGORY_HPP
 
-#include "callable/call_result.hpp"
-#include "configs/namespace_macro.h"
-#include "utility/priority_tag.hpp"
+#include "cepo/callable/call_result.hpp"
+#include "cepo/configs/namespace_macro.h"
+#include "cepo/utility/priority_tag.hpp"
 #include <type_traits>
 
 CEPO_NAMESPACE_START;
 
-namespace callable
+namespace impl
 {
 	struct basic_call_category{};
 	struct pointer_to_member_call_by_object_category{};
 	struct pointer_to_member_call_by_pointer_category{};
-	struct invalid_call_category{}; 
+	//Just to avoid hard errors
+	struct invalid_call_category{};
 
 	//Use is_callable to check it first before using
 	template<typename F, typename... Args>

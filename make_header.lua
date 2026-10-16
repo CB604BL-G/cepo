@@ -35,11 +35,11 @@ end
 if rel:find("%.%.", 1, true) then
 	fail("path must not contain '..': " .. input)
 end
-if rel:sub(1, #"include/") == "include/" then
-	rel = rel:sub(#"include/" + 1)
+if rel:sub(1, #"include/cepo/") == "include/cepo/" then
+	rel = rel:sub(#"include/cepo/" + 1)
 end
 
-local output = "include/" .. rel
+local output = "include/cepo/" .. rel
 
 local upper = rel:upper():gsub("[^A-Z0-9]", "_")
 local guard = PREFIX .. upper

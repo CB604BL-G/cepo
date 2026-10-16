@@ -2,25 +2,23 @@
 #ifndef CEPO_TYPE_TRAITS_IS_NOTHROW_CONVERTIBLE_HPP
 #define CEPO_TYPE_TRAITS_IS_NOTHROW_CONVERTIBLE_HPP
 
-#include "configs/namespace_macro.h"
-#include "type_traits/conjunction.hpp"
-#include "type_traits/disjunction.hpp"
+#include "cepo/configs/namespace_macro.h"
 #include <type_traits>
 #include <utility>
 
 CEPO_NAMESPACE_START;
 
-namespace type_traits
+namespace impl
 {
 	template<typename From, typename To,
-		bool is_void = disjunction<std::is_void<To>, std::is_void<From>>::value>
-	struct is_nothrow_convertible_impl
+		bool is_void = std::is_void<To>::value or std::is_void<From>::value>
+	struct is_nothrow_convertible
 	{
-		static constexpr bool value = conjunction<std::is_void<To>, std::is_void<From>>::value;
+		static constexpr bool value = std::is_void<To>::value and std::is_void<From>::value;
 	};
 
 	template<typename From, typename To>
-	struct is_nothrow_convertible_impl<From, To, false>
+	struct is_nothrow_convertible<From, To, false>
 	{
 	private:
 		template<typename ToF>
@@ -42,16 +40,16 @@ namespace type_traits
 	};
 
 	template<typename From, typename To, bool is_void>
-	constexpr bool is_nothrow_convertible_impl<From, To, is_void>::value;
+	constexpr bool is_nothrow_convertible<From, To, is_void>::value;
 
 	template<typename From, typename To>
-	constexpr bool is_nothrow_convertible_impl<From, To, false>::value;
+	constexpr bool is_nothrow_convertible<From, To, false>::value;
 }
 
 template<typename From, typename To>
 struct is_nothrow_convertible
 {
-	static constexpr bool value = type_traits::is_nothrow_convertible_impl<From, To>::value;
+	static constexpr bool value = impl::is_nothrow_convertible<From, To>::value;
 };
 
 template<typename From, typename To>
