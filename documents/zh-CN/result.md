@@ -14,10 +14,11 @@ cepo::result<T, E> 是一个 C++11 的 move-only 结果类型，用于把"值 / 
 
 2. 类型组成
 
-类型 角色 公开接口
-result<T, E> 终态对象 见 §3–§5
-result_value_type<T> 值的构造载体 移动构造/赋值、默认构造（SFINAE）、emplace-like（SFINAE，explicit）
-result_error_type<E> 错误的构造载体 同上
+|类型|角色|公开接口|
+|---|---|---|
+|result<T, E>|终态对象|见 §3–§5|
+|result_value_type<T>|值的构造载体|移动构造/赋值、默认构造（SFINAE）、emplace-like（SFINAE，explicit）||
+|result_error_type<E>|错误的构造载体|同上|
 
 · result 是后两者的 friend
 · 后两者只用于 make_result_* → result 的传递，不承担状态语义
@@ -31,11 +32,12 @@ result_error_type<E> 错误的构造载体 同上
 
 四种合法状态（推导表闭合，16 种组合收敛到 4 种）：
 
-状态 is_ok is_error is_empty has_exception 成因
-Value ✅ ❌ ❌ ❌ 持有 T
-Error ❌ ✅ ❌ ❌ 持有 E
-Failed ❌ ❌ ✅ ✅ T/E 构造或移动时抛异常
-Moved-from ❌ ❌ ✅ ❌ result 已被移动
+|状态|is_ok|is_error|is_empty|has_exception|成因|
+|---|---|---|---|---|---|
+|Value|✅|❌|❌|❌|持有 T|
+|Error|❌|✅|❌|❌|持有 E|
+|Failed|❌|❌|✅|✅|T/E 构造或移动时抛异常|
+|Moved-from|❌|❌|✅|❌|result 已被移动|
 
 推导关系：
 
@@ -127,12 +129,13 @@ auto e = make_result_error<E>(args...) noexcept;
 
 所有移动操作 noexcept。含义：异常不逃逸，但 T/E 移动过程中可能抛异常，抛出的异常会被捕获并存储。
 
-源状态 目标状态 源状态
-Value（移动成功） Value Moved-from
-Value（T 移动抛异常） Failed（捕获异常） Moved-from
-Error（E 移动抛异常） Failed（捕获异常） Moved-from
-Failed Failed（继承异常） Moved-from
-Moved-from Moved-from Moved-from
+|源状态|目标状态|源状态|
+|---|---|---|
+|Value（移动成功）|Value|Moved-from|
+|Value（T 移动抛异常）|Failed（捕获异常）|Moved-from|
+|Error（E 移动抛异常）|Failed（捕获异常）|Moved-from|
+|Failed|Failed（继承异常）|Moved-from|
+|Moved-from|Moved-from|Moved-from|
 
 移动赋值的额外步骤：先 destroy_self()（析构当前持有的 T/E），再接管源状态。
 
