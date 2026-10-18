@@ -6,9 +6,9 @@ cepo::result<T, E> 是一个 C++11 的 move-only 结果类型，用于把"值 / 
 
 核心保证：
 
-· 无默认构造、无拷贝构造
-· T/E 的构造与移动异常在 result 或包装类型的构造函数中捕获
-· 所有移动操作 noexcept（异常不逃逸，但可能被捕获存储）
+- 无默认构造、无拷贝构造
+- T/E 的构造与移动异常在 result 或包装类型的构造函数中捕获
+- 所有移动操作 noexcept（异常不逃逸，但可能被捕获存储）
 
 ---
 
@@ -20,9 +20,11 @@ cepo::result<T, E> 是一个 C++11 的 move-only 结果类型，用于把"值 / 
 |result_value_type<T>|值的构造载体|移动构造/赋值、默认构造（SFINAE）、emplace-like（SFINAE，explicit）||
 |result_error_type<E>|错误的构造载体|同上|
 
-· result 是后两者的 friend
-· 后两者只用于 make_result_* → result 的传递，不承担状态语义
-· 包装类型的构造均 explicit（除移动构造），均 noexcept（内部捕获）
+- result 是后两者的 friend
+
+- 后两者只用于 make_result_* → result 的传递，不承担状态语义
+
+- 包装类型的构造均 explicit（除移动构造），均 noexcept（内部捕获）
 
 ---
 
@@ -76,9 +78,11 @@ const T& unwrap_value() const;
 const E& unwrap_error() const;
 ```
 
-· 状态不匹配（Value ↔ Error 方向、或 any Empty）→ 抛 cepo::bad_result_access
-· bad_result_access 不携带原始异常，只表示"获取失败"。需要原始异常请先 has_exception() + get_exception()
-· 错误值始终只读：修改错误会掩盖原始信息
+- 状态不匹配（Value ↔ Error 方向、或 any Empty）→ 抛 cepo::bad_result_access
+
+- bad_result_access 不携带原始异常，只表示"获取失败"。需要原始异常请先 has_exception() + get_exception()
+
+- 错误值始终只读：修改错误会掩盖原始信息
 
 ---
 
@@ -92,17 +96,23 @@ res.ok([](T& v) { /* 可修改 v 的状态 */ })
 res.ok([](T& v) { ... }).ignore_error();
 ```
 
-· ok(F) 返回 when_error（保存 result*，禁拷贝）
-· when_error::error(F) && / when_error::ignore_error() && 是终态操作，返回 void
-· 回调参数不能为空（T=void 时 ok 无参）
-· F 必须是 void 返回值
-· 库不捕获 F 的异常：抛出的异常会向调用方传播，result 状态不变（F 对 T 的部分修改不回滚）
-· 状态为空时静默不处理——异常路径必须用 has_exception() 另行检查
+- ok(F) 返回 when_error（保存 result*，禁拷贝）
+
+- when_error::error(F) && / when_error::ignore_error() && 是终态操作，返回 void
+
+- 回调参数不能为空（T=void 时 ok 无参）
+
+- F 必须是 void 返回值
+
+- 库不捕获 F 的异常：抛出的异常会向调用方传播，result 状态不变（F 对 T 的部分修改不回滚）
+
+- 状态为空时静默不处理——异常路径必须用 has_exception() 另行检查
 
 严格禁止：
 
-· 保存 when_error（成员、容器、返回值、auto&& 都不行）
-· 唯一合法用法是立即链式消费
+- 保存 when_error（成员、容器、返回值、auto&& 都不行）
+
+- 唯一合法用法是立即链式消费
 
 ---
 
@@ -119,9 +129,11 @@ auto v = make_result_value<T>(args...) noexcept;   // T=void 时 0 参数
 auto e = make_result_error<E>(args...) noexcept;
 ```
 
-· 工厂不负责捕获——异常已在包装类型构造时被捕获
-· 工厂的 noexcept 表示"不逃逸异常"，不代表 T/E 构造/移动成功
-· 等价关系：make_result_value<T>(args...) ≡ result_value_type<T>(args...)
+- 工厂不负责捕获——异常已在包装类型构造时被捕获
+
+- 工厂的 noexcept 表示"不逃逸异常"，不代表 T/E 构造/移动成功
+
+- 等价关系：make_result_value<T>(args...) ≡ result_value_type<T>(args...)
 
 ---
 
@@ -157,6 +169,8 @@ T=void 合法（此时 unwrap_value 的两个重载都不存在，ok(F) 的参�
 
 10. 已知边界
 
-· 极端内存耗尽：has_exception() 可能返回 false 但实际有异常发生；is_empty && !has_exception 此时对应"异常捕获失败"而非"已移动"
-· const result&：不支持 ok/error 链（F 可能修改 T）；如需只读，用 unwrap_value() const
-· self-move-assignment：r = std::move(r) 后 r 为 Moved-from（有效但未指定）
+- 极端内存耗尽：has_exception() 可能返回 false 但实际有异常发生；is_empty && !has_exception 此时对应"异常捕获失败"而非"已移动"
+
+- const result&：不支持 ok/error 链（F 可能修改 T）；如需只读，用 unwrap_value() const
+
+- self-move-assignment：r = std::move(r) 后 r 为 Moved-from（有效但未指定）
