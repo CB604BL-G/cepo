@@ -3,18 +3,13 @@
 #define CEPO_RESULT_HPP
 
 #include "cepo/configs/namespace_macro.h"
-#include <new>		// IWYU pragma: keep
 
 CEPO_NAMESPACE_START;
 
 template<typename T, typename E>
-class result;
-
-enum class result_exception_state
+class result
 {
-	value_construction_exception,
-	error_construction_exception,
-	no_exception_threw
+	
 };
 
 CEPO_NAMESPACE_END;

@@ -1,22 +1,12 @@
 #include "cepo/result.hpp"
 #include <cstdio>
+#include <string>
+#include <utility>
+#include "cepo/result/slot_base.hpp"
 
 auto main() -> int
 {
-	cepo::result<int, float> e =
-		cepo::make_result_error<float>(12);
-
-	e
-	.ok(
-		[](int& v)
-		{
-			printf("%d\n", v);
-		}
-	)
-	.error(
-		[](float& f)
-		{
-			printf("%f\n", f);
-		}
-	);
+	cepo::result_value_type<std::string> i("123");
+	decltype(i) j = std::move(i);
+	
 }
