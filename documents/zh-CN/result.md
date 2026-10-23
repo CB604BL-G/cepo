@@ -78,9 +78,9 @@ const T& unwrap_value() const;
 const E& unwrap_error() const;
 ```
 
-- 状态不匹配（Value ↔ Error 方向、或 any Empty）→ 抛 cepo::bad_result_access
+- 状态不匹配（Value ↔ Error 方向、或 any Empty）→ 抛 cepo::bad_result_unwrap
 
-- bad_result_access 不携带原始异常，只表示"获取失败"。需要原始异常请先 has_exception() + get_exception()
+- bad_result_unwrap 不携带原始异常，只表示"获取失败"。需要原始异常请先 has_exception() + get_exception()
 
 - 错误值始终只读：修改错误会掩盖原始信息
 

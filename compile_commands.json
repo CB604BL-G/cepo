@@ -1,8 +1,8 @@
 [
 {
   "directory": "/data/data/com.termux/files/home/projects/cepo/.build",
-  "command": "/data/data/com.termux/files/usr/bin/c++  -I/data/data/com.termux/files/home/projects/cepo/include -O3 -DNDEBUG -std=c++11 -Wall -Wextra -Wpedantic -o CMakeFiles/test.dir/test.cpp.o -c /data/data/com.termux/files/home/projects/cepo/test.cpp",
-  "file": "/data/data/com.termux/files/home/projects/cepo/test.cpp",
-  "output": "CMakeFiles/test.dir/test.cpp.o"
+  "command": "/data/data/com.termux/files/usr/bin/c++  -I/data/data/com.termux/files/home/projects/cepo/include -O3 -DNDEBUG -o CMakeFiles/cepo_library.dir/src/result/bad_result_unwrap.cpp.o -c /data/data/com.termux/files/home/projects/cepo/src/result/bad_result_unwrap.cpp",
+  "file": "/data/data/com.termux/files/home/projects/cepo/src/result/bad_result_unwrap.cpp",
+  "output": "CMakeFiles/cepo_library.dir/src/result/bad_result_unwrap.cpp.o"
 }
 ]

@@ -5,7 +5,6 @@
 #include "cepo/callable/call_category.hpp"
 #include "cepo/callable/is_callable.hpp"
 #include "cepo/configs/namespace_macro.h"
-#include "cepo/utility/always_false.hpp"
 #include <utility>
 
 CEPO_NAMESPACE_START;

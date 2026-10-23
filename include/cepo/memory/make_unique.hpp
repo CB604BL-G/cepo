@@ -3,6 +3,7 @@
 #define CEPO_MEMORY_MAKE_UNIQUE_HPP
 
 #include "cepo/configs/namespace_macro.h"
+#include "cepo/macros/nodiscard.hpp"
 #include "cepo/type_traits/is_bounded_array.hpp"
 #include "cepo/type_traits/is_unbounded_array.hpp"
 #include <cstddef>
@@ -14,6 +15,7 @@ CEPO_NAMESPACE_START;
 
 /*T is not an array*/
 template<typename T, typename... Args>
+CEPO_NODISCARD
 typename std::enable_if<
 	not std::is_array<T>::value and
 	std::is_constructible<T, Args...>::value,
@@ -25,6 +27,7 @@ make_unique(Args&&... args)
 
 /*T is an unbounded array*/
 template<typename T>
+CEPO_NODISCARD
 typename std::enable_if<
 	is_unbounded_array<T>::value and
 	std::is_default_constructible<
@@ -37,6 +40,7 @@ make_unique(std::size_t size)
 
 /*T is a bounded array*/
 template<typename T>
+CEPO_NODISCARD
 typename std::enable_if<
 	is_bounded_array<T>::value and
 	std::is_default_constructible<

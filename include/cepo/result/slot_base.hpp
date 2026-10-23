@@ -3,7 +3,7 @@
 #define CEPO_RESULT_SLOT_BASE_HPP
 
 #include "cepo/configs/namespace_macro.h"
-#include "cepo/result/forward_declaration.hpp"		// IWYU pragma: keep
+#include "cepo/result/base_forward_declaration.hpp"		// IWYU pragma: keep
 #include "cepo/result/slot_tags.hpp"
 #include <exception>
 #include <new>		// IWYU pragma: keep
@@ -18,7 +18,10 @@ namespace impl
 	{
 	private:
 		template<typename Tp, typename Ep>
-		friend class ::cepo::result;
+		friend class ::cepo::impl::result_base;
+
+		template<typename Void, typename Ep>
+		friend class ::cepo::impl::result_base_void;
 
 		//Need an uninitialized area
 		union area_type
@@ -138,13 +141,47 @@ namespace impl
 		result_slot_base(const result_slot_base&) = delete;
 		result_slot_base& operator=(const result_slot_base&) = delete;
 	};
+
+	template<typename Tag>
+	class result_slot_base<void, Tag> {};
+
+	template<typename Tag>
+	class result_slot_base<const void, Tag>{};
+
+	template<typename Tag>
+	class result_slot_base<volatile void, Tag>{};
+
+	template<typename Tag>
+	class result_slot_base<const volatile void, Tag>{};
 }
 
 template<typename T>
-using result_value_type = impl::result_slot_base<T, impl::result_slot_value_tag>;
+class result_value_type
+	: private impl::result_slot_base<T, impl::result_slot_value_tag>
+{
+private:
+	template<typename Tp, typename Ep>
+	friend class ::cepo::impl::result_base;
+	
+public:
+	using impl::result_slot_base<T, impl::result_slot_value_tag>::result_slot_base;
+	using impl::result_slot_base<T, impl::result_slot_value_tag>::operator=;
+};
 
 template<typename E>
-using result_error_type = impl::result_slot_base<E, impl::result_slot_error_tag>;
+class result_error_type
+	: private impl::result_slot_base<E, impl::result_slot_error_tag>
+{
+private:
+	template<typename Tp, typename Ep>
+	friend class ::cepo::impl::result_base;
+	
+	template<typename Void, typename Ep>
+	friend class ::cepo::impl::result_base_void;
+public:
+	using impl::result_slot_base<E, impl::result_slot_error_tag>::result_slot_base;
+	using impl::result_slot_base<E, impl::result_slot_error_tag>::operator=;
+};
 
 CEPO_NAMESPACE_END;
 

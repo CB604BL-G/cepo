@@ -51,7 +51,7 @@ namespace impl
 	template<typename Category, typename F, typename... Args>
 	struct call_result_with_always_type
 	{
-		using type = typename call_result<F, Args...>::type;
+		using type = typename ::cepo::call_result<F, Args...>::type;
 	};
 
 	template<typename F, typename... Args>

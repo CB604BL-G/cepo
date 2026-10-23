@@ -2,226 +2,216 @@
 #ifndef CEPO_RESULT_HPP
 #define CEPO_RESULT_HPP
 
+#include "cepo/callable/call.hpp"
+#include "cepo/callable/call_result.hpp"
+#include "cepo/callable/is_callable.hpp"
 #include "cepo/configs/namespace_macro.h"
-#include "cepo/result/slot_base.hpp"
-#include <algorithm>
-#include <exception>
-#include <new>			// IWYU pragma: keep
+#include "cepo/macros/nodiscard.hpp"
+#include "cepo/result/base_void_helper.hpp"
+#include "cepo/result/result_base.hpp"
+#include "cepo/result/when_error.hpp"
 #include <type_traits>
+#include <utility>
 
 CEPO_NAMESPACE_START;
 
 template<typename T, typename E>
 class result
+	: private impl::result_base<T, E>
 {
 private:
-	static_assert(
-		std::is_nothrow_destructible<T>::value and
+	static_assert(std::is_object<T>::value && std::is_object<E>::value,
+		"cepo::result: T and E must be object types (no references/void/function)");
+
+	static_assert(std::is_move_constructible<T>::value &&
+		std::is_move_constructible<E>::value,
+		"cepo::result: T and E must be move-constructible");
+
+	static_assert(std::is_nothrow_destructible<T>::value &&
 		std::is_nothrow_destructible<E>::value,
-		""
-	);
-	
-	union area_type
-	{
-		T value;
-		E error;
-		area_type() noexcept {}
-		~area_type() noexcept {}
-	};
+		"cepo::result: T and E must have nothrow destructors");
 
-	enum class state_type : unsigned char
-	{
-		has_value,
-		has_error,
-		empty
-	};
-
-	area_type area;
-	std::exception_ptr exception_ptr;
-	state_type state;
-
-	void destroy_self() noexcept
-	{
-		if (state == state_type::has_value)
-			area.value.~T();
-		else if (state == state_type::has_error)
-			area.error.~E();
-
-		state = state_type::empty;
-		exception_ptr = nullptr;
-	}
+	using base_type = impl::result_base<T, E>;
 
 public:
-	result(result&& other) noexcept:
-		area(),
-		exception_ptr(nullptr),
-		state(state_type::empty)
+	using impl::result_base<T, E>::result_base;
+
+	using base_type::is_ok;
+	using base_type::is_error;
+	using base_type::is_empty;
+	using base_type::has_exception;
+
+	using base_type::get_exception;
+	using base_type::unwrap_value;
+	using base_type::unwrap_error;
+
+	template<typename F>
+	CEPO_NODISCARD
+	auto ok(F&& callback)
+	noexcept(is_nothrow_callable<F, T&>::value)
+		-> typename std::enable_if<
+			is_callable<F, T&>::value and
+			std::is_void<
+				typename call_result<F, T&>::type>::value,
+			result_when_error<E>
+		>::type
 	{
-		if (other.is_empty())
-		{
-			exception_ptr = other.exception_ptr;
-			other.exception_ptr = nullptr;
-			return;
-		}
-
-		try
-		{
-			if (other.is_ok())
-			{
-				new (&area.value) T(std::move(other.area.value));
-				state = state_type::has_value;
-			}
-			else
-			{
-				new (&area.error) E(std::move(other.area.error));
-				state = state_type::has_error;
-			}
-		}
-		catch (...)
-		{
-			exception_ptr = std::current_exception();
-		}
-
-		other.destroy_self();
+		if (is_ok())
+			call(
+				std::forward<F>(callback),
+				this->get_value_unchecked());
+		return result_when_error<E>{
+			is_error() ?
+			&this->get_error_unchecked() :
+			nullptr
+		};
 	}
 
-	result(result_value_type<T>&& value) noexcept:
-		area(),
-		exception_ptr(nullptr),
-		state(state_type::empty)
+	template<typename F>
+	CEPO_NODISCARD
+	auto ok(F&& callback) const
+	noexcept(is_nothrow_callable<F, const T&>::value)
+		-> typename std::enable_if<
+			is_callable<F, const T&>::value and
+			std::is_void<
+				typename call_result<F, const T&>::type>::value,
+			result_when_error<E>
+		>::type
 	{
-		if (value.is_empty)
-		{
-			exception_ptr = value.exception_ptr;
-			value.exception_ptr = nullptr;
-			return;
-		}
-
-		try
-		{
-			new (&area.value) T(std::move(value.area.slot));
-			state = state_type::has_value;
-		}
-		catch (...)
-		{
-			exception_ptr = std::current_exception();
-		}
-
-		value.destroy_self();
+		if (is_ok())
+			call(
+				std::forward<F>(callback),
+				this->get_value_unchecked());
+		return result_when_error<E>{
+			is_error() ?
+			&this->get_error_unchecked() :
+			nullptr
+		};
 	}
-
-	result(result_error_type<E>&& error) noexcept:
-		area(),
-		exception_ptr(nullptr),
-		state(state_type::empty)
-	{
-		if (error.is_empty)
-		{
-			exception_ptr = error.exception_ptr;
-			error.exception_ptr = nullptr;
-			return;
-		}
-
-		try
-		{
-			new (&area.error) E(std::move(error.area.slot));
-			state = state_type::has_error;
-		}
-		catch (...)
-		{
-			exception_ptr = std::current_exception();
-		}
-
-		error.destroy_self();
-	}
-
-	result& operator=(result&& other) noexcept
-	{
-		if (this == &other) return *this;
-
-		destroy_self();
-
-		if (other.is_empty())
-		{
-			exception_ptr = other.exception_ptr;
-			other.exception_ptr = nullptr;
-			return *this;
-		}
-
-		try
-		{
-			if (other.is_ok())
-			{
-				new (&area.value) T(std::move(other.area.value));
-				state = state_type::has_value;
-			}
-			else
-			{
-				new (&area.error) E(std::move(other.area.error));
-				state = state_type::has_error;
-			}
-		}
-		catch (...)
-		{
-			exception_ptr = std::current_exception();
-		}
-
-		other.destroy_self();
-
-		return *this;
-	}
-
-	~result() noexcept
-	{
-		destroy_self();
-	}
-
-	bool is_ok() const noexcept { return state == state_type::has_value; }
-	bool is_error() const noexcept { return state == state_type::has_error; }
-	bool is_empty() const noexcept { return state == state_type::empty; }
-	bool has_exception() const noexcept { return bool(exception_ptr); }
-	
-	result() = delete;
-	result(const result&) = delete;
-	result& operator=(const result&) = delete;
 };
 
 template<typename E>
 class result<void, E>
+	: private impl::result_base_void_helper<void, E>
 {
-public:
+private:
+	static_assert(std::is_object<E>::value,
+		"cepo::result: E must be object types (no references/void/function)");
 
+	static_assert(
+		std::is_move_constructible<E>::value,
+		"cepo::result: E must be move-constructible");
+
+	static_assert(
+		std::is_nothrow_destructible<E>::value,
+		"cepo::result: E must have nothrow destructor");
+
+	using base_type = impl::result_base_void_helper<void, E>;
+public:
+	using impl::result_base_void_helper<void, E>::result_base_void_helper;
+
+	using base_type::is_ok;
+	using base_type::is_error;
+	using base_type::is_empty;
+	using base_type::has_exception;
+
+	using base_type::get_exception;
+	using base_type::unwrap_error;
+	using base_type::ok;
 };
 
 template<typename E>
 class result<const void, E>
-	: result<void, E>
+	: private impl::result_base_void_helper<const void, E>
 {
-public:
-	using result<void, E>::result;
-	using result<void, E>::operator=;
-};
+private:
+	static_assert(std::is_object<E>::value,
+		"cepo::result: E must be object types (no references/void/function)");
 
+	static_assert(
+		std::is_move_constructible<E>::value,
+		"cepo::result: E must be move-constructible");
+
+	static_assert(
+		std::is_nothrow_destructible<E>::value,
+		"cepo::result: E must have nothrow destructor");
+
+	using base_type = impl::result_base_void_helper<const void, E>;
+
+public:
+	using impl::result_base_void_helper<const void, E>::result_base_void_helper;
+
+	using base_type::is_ok;
+	using base_type::is_error;
+	using base_type::is_empty;
+	using base_type::has_exception;
+
+	using base_type::get_exception;
+	using base_type::unwrap_error;
+	using base_type::ok;
+};
 
 template<typename E>
 class result<volatile void, E>
-	: result<void, E>
+	: private impl::result_base_void_helper<volatile void, E>
 {
-public:
-	using result<void, E>::result;
-	using result<void, E>::operator=;
-};
+private:
+	static_assert(std::is_object<E>::value,
+		"cepo::result: E must be object types (no references/void/function)");
 
+	static_assert(
+		std::is_move_constructible<E>::value,
+		"cepo::result: E must be move-constructible");
+
+	static_assert(
+		std::is_nothrow_destructible<E>::value,
+		"cepo::result: E must have nothrow destructor");
+
+	using base_type = impl::result_base_void_helper<volatile void, E>;
+
+public:
+	using impl::result_base_void_helper<volatile void, E>::result_base_void_helper;
+
+	using base_type::is_ok;
+	using base_type::is_error;
+	using base_type::is_empty;
+	using base_type::has_exception;
+
+	using base_type::get_exception;
+	using base_type::unwrap_error;
+	using base_type::ok;
+};
 
 template<typename E>
 class result<const volatile void, E>
-	: result<void, E>
+	: private impl::result_base_void_helper<const volatile void, E>
 {
-public:
-	using result<void, E>::result;
-	using result<void, E>::operator=;
-};
+private:
+	static_assert(std::is_object<E>::value,
+		"cepo::result: E must be object types (no references/void/function)");
 
+	static_assert(
+		std::is_move_constructible<E>::value,
+		"cepo::result: E must be move-constructible");
+
+	static_assert(
+		std::is_nothrow_destructible<E>::value,
+		"cepo::result: E must have nothrow destructor");
+
+	using base_type = impl::result_base_void_helper<const volatile void, E>;
+
+public:
+	using impl::result_base_void_helper<const volatile void, E>::result_base_void_helper;
+
+	using base_type::is_ok;
+	using base_type::is_error;
+	using base_type::is_empty;
+	using base_type::has_exception;
+
+	using base_type::get_exception;
+	using base_type::unwrap_error;
+	using base_type::ok;
+};
 
 CEPO_NAMESPACE_END;
 
