@@ -1,4 +1,5 @@
 //Copyright (c) 2026 CB604BL
+//CEPO - C++ Eleven Patches Open-source
 #ifndef CEPO_UTILITY_ARG_PACK_TUPLE_HPP
 #define CEPO_UTILITY_ARG_PACK_TUPLE_HPP
 

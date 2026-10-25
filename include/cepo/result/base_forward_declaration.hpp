@@ -1,4 +1,5 @@
 //Copyright (c) 2026 CB604BL
+//CEPO - C++ Eleven Patches Open-source
 #ifndef CEPO_RESULT_BASE_FORWARD_DECLARATION_HPP
 #define CEPO_RESULT_BASE_FORWARD_DECLARATION_HPP
 

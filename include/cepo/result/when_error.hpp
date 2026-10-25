@@ -1,4 +1,5 @@
 //Copyright (c) 2026 CB604BL
+//CEPO - C++ Eleven Patches Open-source
 #ifndef CEPO_RESULT_WHEN_ERROR_HPP
 #define CEPO_RESULT_WHEN_ERROR_HPP
 
@@ -40,6 +41,8 @@ public:
 		if (error_handler)
 			call(std::forward<F>(callback), *error_handler);
 	}
+
+	void ignore_error() && noexcept {}
 	
 	result_when_error() = delete;
 	result_when_error(const result_when_error&) = delete;

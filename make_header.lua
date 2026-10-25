@@ -53,6 +53,7 @@ local guard = PREFIX .. upper
 
 local content = table.concat({
 	"//Copyright (c) 2026 CB604BL",
+	"//CEPO - C++ Eleven Patches Open-source",
 	"#ifndef " .. guard,
 	"#define " .. guard,
 	"",

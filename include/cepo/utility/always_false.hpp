@@ -1,4 +1,5 @@
 //Copyright (c) 2026 CB604BL
+//CEPO - C++ Eleven Patches Open-source
 #ifndef CEPO_UTILITY_ALWAYS_FALSE_HPP
 #define CEPO_UTILITY_ALWAYS_FALSE_HPP
 

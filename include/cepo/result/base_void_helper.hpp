@@ -1,4 +1,5 @@
 //Copyright (c) 2026 CB604BL
+//CEPO - C++ Eleven Patches Open-source
 #ifndef CEPO_RESULT_BASE_VOID_HELPER_HPP
 #define CEPO_RESULT_BASE_VOID_HELPER_HPP
 
@@ -9,7 +10,6 @@
 #include "cepo/result/result_base.hpp"
 #include "cepo/result/when_error.hpp"
 #include "cepo/type_traits/conjunction.hpp"
-#include <cstdarg>
 #include <type_traits>
 #include <utility>
 

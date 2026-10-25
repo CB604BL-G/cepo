@@ -1,10 +1,11 @@
 //Copyright (c) 2026 CB604BL
+//CEPO - C++ Eleven Patches Open-source
 #ifndef CEPO_RESULT_RESULT_BASE_HPP
 #define CEPO_RESULT_RESULT_BASE_HPP
 
 #include "cepo/configs/namespace_macro.h"
 #include "cepo/result/bad_result_unwrap.hpp"
-#include "cepo/result/slot_base.hpp"
+#include "cepo/result/slots.hpp"
 #include <exception>
 #include <utility>
 
@@ -88,8 +89,8 @@ namespace impl
 	
 			other.destroy_self();
 		}
-	
-		result_base(result_value_type<T>&& value) noexcept:
+
+		result_base(result_value_slot<T>&& value) noexcept:
 			area(),
 			exception_ptr(nullptr),
 			state(state_type::empty)
@@ -114,7 +115,7 @@ namespace impl
 			value.destroy_self();
 		}
 
-		result_base(result_error_type<E>&& error) noexcept:
+		result_base(result_error_slot<E>&& error) noexcept:
 			area(),
 			exception_ptr(nullptr),
 			state(state_type::empty)
@@ -287,13 +288,13 @@ namespace impl
 		}
 
 		//There is NO data member in result_value_type when std::is_void<Void>::value is true
-		result_base_void(result_value_type<Void>&&) noexcept:
+		result_base_void(result_value_slot<Void>&&) noexcept:
 			area(),
 			exception_ptr(nullptr),
 			state(state_type::ok)
 		{}
 
-		result_base_void(result_error_type<E>&& error) noexcept:
+		result_base_void(result_error_slot<E>&& error) noexcept:
 			area(),
 			exception_ptr(nullptr),
 			state(state_type::empty)

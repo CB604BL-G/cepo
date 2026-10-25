@@ -1,4 +1,5 @@
 //Copyright (c) 2026 CB604BL
+//CEPO - C++ Eleven Patches Open-source
 #ifndef CEPO_UTILITY_PRIORITY_TAG_HPP
 #define CEPO_UTILITY_PRIORITY_TAG_HPP
 

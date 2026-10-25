@@ -1,4 +1,5 @@
 //Copyright (c) 2026 CB604BL
+//CEPO - C++ Eleven Patches Open-source
 #ifndef CEPO_TYPE_TRAITS_CONJUNCTION_HPP
 #define CEPO_TYPE_TRAITS_CONJUNCTION_HPP
 

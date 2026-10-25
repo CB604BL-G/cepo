@@ -1,4 +1,5 @@
 //Copyright (c) 2026 CB604BL
+//CEPO - C++ Eleven Patches Open-source
 #ifndef CEPO_MEMORY_MAKE_UNIQUE_HPP
 #define CEPO_MEMORY_MAKE_UNIQUE_HPP
 
