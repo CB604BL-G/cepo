@@ -6,6 +6,12 @@
 -- Each argument is "unit.item"; unit and item names must consist only of
 -- lowercase ASCII letters, numbers and underscores. The target directories must not
 -- exist yet.
+--
+-- The unit name "gen_lib" is reserved: test.lua excludes it from unit scanning,
+-- so an item placed there would never run.
+
+-- Unit names that test.lua never scans.
+local RESERVED_UNITS = { gen_lib = true }
 
 local function fail(msg)
 	io.stderr:write("error: " .. msg .. "\n")
@@ -58,6 +64,9 @@ for _, a in ipairs(arg) do
 	end
 	check_name(unit, "unit")
 	check_name(item, "item")
+	if RESERVED_UNITS[unit] then
+		fail("unit name '" .. unit .. "' is reserved and is not scanned by test.lua")
+	end
 	local key = unit .. "." .. item
 	if seen[key] then
 		fail("duplicate argument '" .. a .. "'")

@@ -3,4 +3,4 @@
 /tests/*/*/.build/
 /tests/gen_lib/
 /quick_test/.build/
-/test_dependency_of_cepo/.build/
+/dependency_test/.build/

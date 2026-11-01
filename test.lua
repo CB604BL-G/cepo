@@ -6,7 +6,8 @@
 --
 -- Exit codes:
 --   0  all selected items passed
---   1  CLI errors, or at least one item failed
+--   1  at least one item failed
+--   2  CLI errors; nothing was built or run
 --   4  tests/gen_lib/libcepo.a failed to build
 
 local function sh_quote(s)
@@ -353,7 +354,7 @@ if #errors > 0 then
 	for _, e in ipairs(errors) do
 		io.stderr:write("error: " .. e .. "\n")
 	end
-	os.exit(1)
+	os.exit(2)
 end
 
 -- No --u given: scan tests/ for all units.
