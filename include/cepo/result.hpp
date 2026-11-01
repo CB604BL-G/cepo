@@ -16,6 +16,25 @@
 
 CEPO_NAMESPACE_START;
 
+//This is a tri-state move-only class. It has three
+//states: ok, error, and empty. However, empty can
+//also represent the moved-from state or a state resulting
+//from a construction exception, so it can be roughly
+//regarded as a four-state class. Nevertheless, since
+//we focus more on value states, we still define it
+//as a tri-state type.
+
+//Moreover, the result class is not completely exception-free.
+//It only guarantees that no new exceptions will be thrown
+//along the error-propagation chain, which is why both
+//its constructors and its move assignment operator are
+//noexcept. If you call unwrap_value when the state is
+//empty or error, it will throw an exception rather than
+//silently fail and give you an invalid reference. The
+//same applies when calling unwrap_error. The exception
+//thrown when unwrap fails does not carry the exception
+//that may have occurred during construction; you still
+//need to use has_exception to detect it.
 template<typename T, typename E>
 class result
 	: private impl::result_base<T, E>

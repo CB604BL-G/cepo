@@ -28,6 +28,7 @@ namespace impl
 		template<typename FromT, typename ToT>
 		static auto test(int) ->
 			decltype(
+				//The static_cast here is only meant to reproduce the well-formedness check for a form like "To foo() {}".
 				static_cast<ToT(*)()>(nullptr),
 				std::integral_constant<
 					bool,

@@ -9,6 +9,10 @@
 #include <utility>
 
 CEPO_NAMESPACE_START;
+//I just want to say: call is call, invoke is invoke.
+//cepo::call is not fully equivalent to std::invoke;
+//we have narrowed the semantics here to focus solely
+//on “a single call operation.”
 
 //=== if return void ===//
 template<typename F, typename... Args>

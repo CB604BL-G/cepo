@@ -1,5 +1,6 @@
 /.build/
 /.cache/
-/test/*/.build/
+/tests/*/*/.build/
+/tests/gen_lib/
 /quick_test/.build/
 /test_dependency_of_cepo/.build/

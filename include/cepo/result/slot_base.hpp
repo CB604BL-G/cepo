@@ -34,8 +34,6 @@ namespace impl
 
 		area_type area;
 		std::exception_ptr exception_ptr;
-		//If exception_ptr != nullptr
-		//is_empty = true
 		bool is_empty;
 
 		void destroy_self() noexcept

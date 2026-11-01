@@ -40,12 +40,6 @@ private:
 	template<typename Tp, typename Ep>
 	friend class ::cepo::impl::result_base;
 
-	//When T is void, cepo::impl::result_base_void
-	//does not use any members of result_value_slot
-	//at all, so there is no need to additionally
-	//declare cepo::impl::result_base_void as a friend
-	//class of result_value_slot.
-	
 public:
 	using impl::result_slot_base<T, impl::result_slot_value_tag>::result_slot_base;
 };
@@ -68,9 +62,6 @@ private:
 	
 	template<typename Tp, typename Ep>
 	friend class ::cepo::impl::result_base;
-	
-	template<typename Void, typename Ep>
-	friend class ::cepo::impl::result_base_void;
 
 public:
 	using impl::result_slot_base<E, impl::result_slot_error_tag>::result_slot_base;

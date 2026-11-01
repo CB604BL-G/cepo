@@ -52,6 +52,7 @@ namespace impl
 		template<typename F>
 		CEPO_NODISCARD
 		auto ok(F&& callback) const
+			noexcept(is_nothrow_callable<F>::value)
 			-> typename std::enable_if<
 					is_callable<F>::value and
 					std::is_void<
