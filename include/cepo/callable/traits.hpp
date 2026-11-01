@@ -11,6 +11,7 @@
 #include <cstddef>
 #include <type_traits>
 
+//Not considering noexcept compatibility for C++17 for now.
 CEPO_NAMESPACE_START;
 
 template<typename... Ts>
