@@ -43,7 +43,7 @@ struct callable_traits<Ret(Args...)>
 	static constexpr std::size_t fixed_arg_count = fixed_arg_types::size;
 
 	template<std::size_t index>
-	using arg_type_at = typename fixed_arg_types::template get_type_at<index>::type;
+	using arg_type_at = typename fixed_arg_types::template at<index>::type;
 
 	using return_type = Ret;
 
