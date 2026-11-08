@@ -35,6 +35,14 @@ CEPO_NAMESPACE_START;
 //thrown when unwrap fails does not carry the exception
 //that may have occurred during construction; you still
 //need to use has_exception to detect it.
+
+//Note on the slot -> result transfer: it is always a move.
+//Because of this, a T (or E) whose move constructor may throw
+//can never produce an ok (respectively error) result at all:
+//make_result_value / make_result_error already fails at that
+//step, and the result ends up empty with the exception recorded.
+//In other words, "move-constructible" is not enough here; only
+//types that do not throw on move can actually carry a value state.
 template<typename T, typename E>
 class result
 	: private impl::result_base<T, E>
