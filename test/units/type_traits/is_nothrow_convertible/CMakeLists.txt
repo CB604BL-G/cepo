@@ -9,9 +9,9 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 add_executable(is_nothrow_convertible test.cpp)
 
 target_include_directories(is_nothrow_convertible PRIVATE
-	"${CMAKE_CURRENT_SOURCE_DIR}/../../../include"
+	"${CMAKE_CURRENT_SOURCE_DIR}/../../../../include"
 )
 
 target_link_libraries(is_nothrow_convertible PRIVATE
-	"${CMAKE_CURRENT_SOURCE_DIR}/../../gen_lib/libcepo.a"
+	"${CMAKE_CURRENT_SOURCE_DIR}/../../../gen_lib/libcepo.a"
 )

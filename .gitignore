@@ -1,6 +1,6 @@
 /.build/
 /.cache/
-/tests/*/*/.build/
-/tests/gen_lib/
-/quick_test/.build/
-/dependency_test/.build/
+/test/units/*/*/.build/
+/test/gen_lib/
+/test/quick_test/.build/
+/test/dependency_test/.build/

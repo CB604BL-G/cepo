@@ -12,8 +12,9 @@
 --
 -- This test consumes cepo the way a downstream project would: through
 -- `include("$ENV{CEPO_CMAKE}")` and the `cepo::cepo` alias target. It therefore
--- requires CEPO_CMAKE to point at lib.cmake, which install/unix.lua -i
--- and install/windows.lua -i set, and which unix_copy.lua / windows_copy.lua leave to the user.
+-- requires CEPO_CMAKE to point at lib.cmake, which install/unix.lua -i and
+-- install/windows.lua -i set, and which unix_copy.lua / windows_copy.lua leave
+-- to the user.
 --
 -- Exit codes:
 --   0  success
@@ -42,7 +43,7 @@ local function is_file_basic(path)
 	return true
 end
 
-local src_dir = script_dir .. "/dependency_test"
+local src_dir = script_dir .. "/test/dependency_test"
 local build_dir = src_dir .. "/.build"
 local exe = build_dir .. "/dependency_test"
 

@@ -10,7 +10,8 @@ The workflow assumes:
 - `lua` **5.4**
 - `cmake` **3.20+**
 - You run every command from the **project root** (the directory that
-  contains `test.lua`, `make_test_item.lua`, `include/`, `src/`, ...)
+  contains `test.lua`, `make_test_item.lua`, `remove_test_item.lua`,
+  `include/`, `src/`, ...)
 
 ---
 
@@ -21,59 +22,68 @@ The workflow assumes:
 <project-root>/
 ├── include/                     cepo public headers (added to each item's -I)
 ├── src/                         cepo sources
-├── tests/
-│   ├── CMakeLists.txt           builds tests/gen_lib/libcepo.a
+├── test/
+│   ├── CMakeLists.txt           builds test/gen_lib/libcepo.a
 │   ├── gen_lib/                 generated build tree (do not commit)
 │   │   ├── libcepo.a
 │   │   ├── CMakeCache.txt
 │   │   ├── CMakeFiles/
 │   │   └── cepo_build/
-│   └── <unit>/
-│       └── <item>/
-│           ├── CMakeLists.txt   required
-│           ├── test.cpp         the only source file
-│           ├── metadata.txt     optional (defaults are used if missing)
-│           └── .build/          generated build tree (do not commit)
+│   ├── units/
+│   │   └── <unit>/
+│   │       └── <item>/
+│   │           ├── CMakeLists.txt   required
+│   │           ├── test.cpp         the only source file
+│   │           ├── metadata.txt     optional (defaults are used if missing)
+│   │           └── .build/          generated build tree (do not commit)
+│   ├── quick_test/              ad-hoc check, links cepo via add_subdirectory
+│   ├── dependency_test/         downstream consumption check via CEPO_CMAKE
+│   └── README.md                this document
 ├── test.lua                     test runner
 ├── make_test_item.lua           item generator
-├── quick_test.lua               runner for quick_test/
-├── quick_test/                  ad-hoc check, links cepo via add_subdirectory
-├── dependency_test.lua          runner for dependency_test/
-└── dependency_test/             downstream consumption check via CEPO_CMAKE
+├── remove_test_item.lua         item remover
+├── quick_test.lua               runner for test/quick_test/
+└── dependency_test.lua          runner for test/dependency_test/
 
 ```
 
-- A **unit** is a directory directly under `tests/` (excluding `gen_lib`).
+- A **unit** is a directory directly under `test/units/`.
 - An **item** is a directory directly under a unit.
 - Each item is compiled and run **independently**. Items do not share
   build directories.
-- `quick_test/` and `dependency_test/` are single-program checks, not test
-  units. They are driven by their own runners, described in section 9.
+- `test/gen_lib/` is a sibling of `test/units/`, not a unit, so nothing
+  generated lives inside the directory that `test.lua` scans.
+- `test/quick_test/` and `test/dependency_test/` are single-program checks,
+  not test units. They are driven by their own runners, described in
+  section 9.
+- Item directories are created and deleted **only** by `make_test_item.lua`
+  and `remove_test_item.lua`, see section 7. Creating or deleting them by
+  any other means is undefined.
 
 ---
 
 ## 2. Building `libcepo.a`
 
 The shared static library is built by `test.lua` **once** per run, before
-any item is compiled, using `tests/CMakeLists.txt`:
+any item is compiled, using `test/CMakeLists.txt`:
 
 ```
 
-cmake -S tests -B tests/gen_lib
-cmake --build tests/gen_lib
+cmake -S test -B test/gen_lib
+cmake --build test/gen_lib
 
 ```
 
-The result is `tests/gen_lib/libcepo.a`. Every item links against this
+The result is `test/gen_lib/libcepo.a`. Every item links against this
 single archive.
 
-- The build is **incremental**. `tests/gen_lib/` keeps CMake's cache and
+- The build is **incremental**. `test/gen_lib/` keeps CMake's cache and
   object files on purpose. Do not delete it between runs unless you want a
   full rebuild.
 - If the library fails to build, `test.lua` prints the error and exits
   with code **4** without running any item.
 
-`tests/CMakeLists.txt` is expected to look like:
+`test/CMakeLists.txt` is expected to look like:
 
 ```cmake
 cmake_minimum_required(VERSION 3.20)
@@ -84,7 +94,7 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# Place libcepo.a directly under tests/gen_lib/
+# Place libcepo.a directly under test/gen_lib/
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}/gen_lib")
 
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/.." cepo_build)
@@ -94,7 +104,7 @@ add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/.." cepo_build)
 
 ## 3. Item Layout
 
-Each item lives in tests/<unit>/<item>/ and must contain:
+Each item lives in test/units/<unit>/<item>/ and must contain:
 
 File Required Notes
 CMakeLists.txt yes Builds an executable named after the item dir
@@ -116,23 +126,23 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 add_executable(<item> test.cpp)
 
 target_include_directories(<item> PRIVATE
-	"${CMAKE_CURRENT_SOURCE_DIR}/../../../include"
+	"${CMAKE_CURRENT_SOURCE_DIR}/../../../../include"
 )
 
 target_link_libraries(<item> PRIVATE
-	"${CMAKE_CURRENT_SOURCE_DIR}/../../gen_lib/libcepo.a"
+	"${CMAKE_CURRENT_SOURCE_DIR}/../../../gen_lib/libcepo.a"
 )
 ```
 
 Key conventions:
 
 · Executable name equals the item directory name. The runner looks
-  for tests/<unit>/<item>/.build/<item> after building.
-· CWD at run time is the item directory (tests/<unit>/<item>/), not
+  for test/units/<unit>/<item>/.build/<item> after building.
+· CWD at run time is the item directory (test/units/<unit>/<item>/), not
   the build directory and not the project root.
-· Include path ../../../include reaches <project-root>/include from
+· Include path ../../../../include reaches <project-root>/include from
   the item directory.
-· Link path ../../gen_lib/libcepo.a reaches the shared archive.
+· Link path ../../../gen_lib/libcepo.a reaches the shared archive.
 · Because the archive is referenced by absolute path, CMake tracks it as
   a link dependency and relinks the item automatically whenever
   libcepo.a is rebuilt.
@@ -202,8 +212,8 @@ Run everything
 lua test.lua
 ```
 
-Scans tests/ for all units (every non-hidden directory except
-gen_lib), then every item inside each unit.
+Scans test/units/ for all units (every non-hidden directory), then every
+item inside each unit. Nothing needs to be excluded by name.
 
 Run all items of one unit
 
@@ -245,7 +255,7 @@ Code Meaning
 0 All selected items passed
 1 At least one item failed
 2 CLI error; nothing was built or run
-4 tests/gen_lib/libcepo.a failed to build
+4 test/gen_lib/libcepo.a failed to build
 
 A fatal error while building the shared library is reported separately
 from test failures: code 4 means the run never reached any item, while
@@ -272,7 +282,23 @@ Failed items:
 
 ---
 
-## 7. Generating New Items
+## 7. Managing Items
+
+Item directories under `test/units/` belong to two scripts and to nothing
+else:
+
+```sh
+lua make_test_item.lua <unit>.<item> [<unit>.<item> ...]     # create
+lua remove_test_item.lua <unit>.<item> [<unit>.<item> ...]   # delete
+```
+
+Creating or deleting an item directory by any other means - `mkdir`, an
+editor, `cp -r` of an existing item, `rm`, a file manager - is undefined:
+an item is more than a folder, it carries a generated `CMakeLists.txt` whose
+include and link paths depend on the depth of the layout, and a unit without
+items is not a valid state.
+
+### Creating items
 
 ```sh
 lua make_test_item.lua <unit>.<item> [<unit>.<item> ...]
@@ -283,21 +309,18 @@ lua make_test_item.lua <unit>.<item> [<unit>.<item> ...]
   · start with a lowercase letter or underscore,
   · followed by lowercase letters, digits, or underscores.
   · Digits are allowed but not as the first character.
-· The unit name gen_lib is reserved and is rejected. test.lua excludes
-  that name from unit scanning, so an item created there would never
-  run. A reserved unit name aborts the whole invocation: if one of
-  several arguments uses it, no item is created, including the
-  arguments that are otherwise valid.
 · The target directories must not exist yet. make_test_item.lua
   checks all targets first; if any exists, nothing is created.
 · Several items can be created in one invocation.
 
 For each item, the generator creates:
 
-· tests/<unit>/<item>/CMakeLists.txt
+· test/units/<unit>/<item>/CMakeLists.txt
   · project name = item name in uppercase
   · target / executable name = item name in lowercase
-· tests/<unit>/<item>/test.cpp:
+  · include path = ../../../../include
+  · linked archive = ../../../gen_lib/libcepo.a
+· test/units/<unit>/<item>/test.cpp:
   ```cpp
   auto main() -> int
   {
@@ -306,11 +329,33 @@ For each item, the generator creates:
 · metadata.txt is not generated; add it manually when you need
   expect_compile_error=true or a custom timeout.
 
-Examples:
+### Removing items
+
+```sh
+lua remove_test_item.lua <unit>.<item> [<unit>.<item> ...]
+```
+
+The arguments are parsed exactly like `make_test_item.lua`: same format,
+same name rules, duplicates rejected. The difference is the expectation,
+the target directories must exist. Every argument is validated before
+anything is deleted, so a typo in a list of several items removes nothing.
+
+For each removed item the script deletes
+`test/units/<unit>/<item>/` with everything inside it, including `.build/`.
+A unit whose last item goes away is deleted as well, because an empty unit
+is not a valid state: `test.lua` would simply find nothing to run in it.
+
+The script is silent about anything it did not touch: if a unit still has
+other items, it stays.
+
+### Examples
 
 ```sh
 lua make_test_item.lua result.construction
 lua make_test_item.lua result.construction result.unwrap
+
+lua remove_test_item.lua result.construction
+lua remove_test_item.lua result.construction result.unwrap   # last one: unit goes too
 ```
 
 ---
@@ -319,12 +364,12 @@ lua make_test_item.lua result.construction result.unwrap
 
 Incremental builds
 
-· tests/gen_lib/ is a real CMake build tree. Keep it between runs.
+· test/gen_lib/ is a real CMake build tree. Keep it between runs.
   Deleting it forces a full rebuild of libcepo.a.
 · Each item keeps its own .build/. Do not mix contents between items.
 · If an item starts behaving strangely (for example, a stale executable
   from a previous successful build is reused after a failed rebuild),
-  delete tests/<unit>/<item>/.build/ and rerun.
+  delete test/units/<unit>/<item>/.build/ and rerun.
 
 Temporary files during runs
 
@@ -358,27 +403,27 @@ Item constraints
 · test.cpp is the only source file expected. If you need more sources,
   the item is probably doing too much -- split it.
 · The unit directory itself is only a container. Plain files placed
-  directly under tests/<unit>/ are ignored.
-· gen_lib is excluded from unit scanning by name. Do not create a unit
-  named gen_lib.
+  directly under test/units/<unit>/ are ignored.
+· test/gen_lib/ is a sibling of test/units/, so a unit may be called
+  gen_lib without colliding with the build tree.
 
 ---
 
 ## 9. Standalone Checks
 
-The checks under `tests/` all build CEPO from the working tree. That answers
+The checks under `test/` all build CEPO from the working tree. That answers
 one question - does the code compile and behave correctly - but says nothing
 about whether a consumer of an *installed* CEPO can find it. The two checks in
 this section cover the missing questions.
 
 | Runner | Directory | Purpose | CEPO is consumed via |
 |---|---|---|---|
-| `quick_test.lua` | `quick_test/` | Ad-hoc check while editing | `add_subdirectory` of the repository root |
-| `dependency_test.lua` | `dependency_test/` | Verify an installation produced by `install/unix.lua -i` is usable | `include("$ENV{CEPO_CMAKE}")` |
+| `quick_test.lua` | `test/quick_test/` | Ad-hoc check while editing | `add_subdirectory` of the repository root |
+| `dependency_test.lua` | `test/dependency_test/` | Verify an installation produced by `install/unix.lua -i` is usable | `include("$ENV{CEPO_CMAKE}")` |
 
 ### `quick_test` — checking code right after writing it
 
-`quick_test/main.cpp` is a scratch file. The intent is to paste a snippet,
+`test/quick_test/main.cpp` is a scratch file. The intent is to paste a snippet,
 run `lua quick_test.lua`, and get an answer immediately, without going through
 `make_test_item.lua`, metadata, or the unit/item scan. It links CEPO through
 `add_subdirectory`, so it compiles against the working tree and needs neither
@@ -455,7 +500,7 @@ The build directory is `<directory>/.build/` and is not committed.
 - `lua` **5.4**
 - `cmake` **3.20** 或更高版本
 - 所有命令均在**项目根目录**执行，即包含 `test.lua`、`make_test_item.lua`、
-  `include/`、`src/` 的目录
+  `remove_test_item.lua`、`include/`、`src/` 的目录
 
 ---
 
@@ -465,52 +510,59 @@ The build directory is `<directory>/.build/` and is not committed.
 <项目根目录>/
 ├── include/                     CEPO 公开头文件（加入每个测试项的 -I）
 ├── src/                         CEPO 源文件
-├── tests/
-│   ├── CMakeLists.txt           构建 tests/gen_lib/libcepo.a
+├── test/
+│   ├── CMakeLists.txt           构建 test/gen_lib/libcepo.a
 │   ├── gen_lib/                 生成的构建目录（不提交）
 │   │   ├── libcepo.a
 │   │   ├── CMakeCache.txt
 │   │   ├── CMakeFiles/
 │   │   └── cepo_build/
-│   └── <unit>/
-│       └── <item>/
-│           ├── CMakeLists.txt   必需
-│           ├── test.cpp         唯一的源文件
-│           ├── metadata.txt     可选（缺失时使用默认值）
-│           └── .build/          生成的构建目录（不提交）
+│   ├── units/
+│   │   └── <unit>/
+│   │       └── <item>/
+│   │           ├── CMakeLists.txt   必需
+│   │           ├── test.cpp         唯一的源文件
+│   │           ├── metadata.txt     可选（缺失时使用默认值）
+│   │           └── .build/          生成的构建目录（不提交）
+│   ├── quick_test/              临时验证，通过 add_subdirectory 链接 cepo
+│   ├── dependency_test/         通过 CEPO_CMAKE 验证下游接入
+│   └── README.md                本文档
 ├── test.lua                     测试运行器
 ├── make_test_item.lua           测试项生成器
-├── quick_test.lua               `quick_test/` 的运行器
-├── quick_test/                  临时验证，通过 add_subdirectory 链接 cepo
-├── dependency_test.lua          `dependency_test/` 的运行器
-└── dependency_test/             通过 CEPO_CMAKE 验证下游接入
+├── remove_test_item.lua         测试项删除器
+├── quick_test.lua               `test/quick_test/` 的运行器
+└── dependency_test.lua          `test/dependency_test/` 的运行器
 ```
 
-- **unit** 是 `tests/` 下一级目录（不含 `gen_lib`）。
+- **unit** 是 `test/units/` 下一级目录。
 - **item** 是 unit 下一级目录。
 - 每个 item 独立编译、独立运行，item 之间不共享构建目录。
-- `quick_test/` 与 `dependency_test/` 是单一程序的检查，不属于测试 unit，
-  由各自的运行器驱动，见第 9 节。
+- `test/gen_lib/` 与 `test/units/` 平级，不是 unit，因此 `test.lua` 扫描的
+  目录里不会再出现由工具生成的目录。
+- `test/quick_test/` 与 `test/dependency_test/` 是单一程序的检查，不属于测试
+  unit，由各自的运行器驱动，见第 9 节。
+- item 目录**只能**由 `make_test_item.lua` 与 `remove_test_item.lua` 创建和
+  删除，见第 7 节；其它任何方式的创建或删除行为未定义。
 
 ---
 
 ## 2. 构建 `libcepo.a`
 
-`test.lua` 在编译任何 item 之前，通过 `tests/CMakeLists.txt` **一次性**构建
+`test.lua` 在编译任何 item 之前，通过 `test/CMakeLists.txt` **一次性**构建
 共享静态库：
 
 ```
-cmake -S tests -B tests/gen_lib
-cmake --build tests/gen_lib
+cmake -S test -B test/gen_lib
+cmake --build test/gen_lib
 ```
 
-产物为 `tests/gen_lib/libcepo.a`，所有 item 都链接这个归档文件。
+产物为 `test/gen_lib/libcepo.a`，所有 item 都链接这个归档文件。
 
-- 构建是**增量的**。`tests/gen_lib/` 会保留 CMake 缓存与目标文件，除非需要
+- 构建是**增量的**。`test/gen_lib/` 会保留 CMake 缓存与目标文件，除非需要
   全量重建，否则不要在两次运行之间删除它。
 - 若该库构建失败，`test.lua` 会输出错误并以退出码 **4** 终止，不运行任何 item。
 
-`tests/CMakeLists.txt` 的内容应为：
+`test/CMakeLists.txt` 的内容应为：
 
 ```cmake
 cmake_minimum_required(VERSION 3.20)
@@ -521,7 +573,7 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# 将 libcepo.a 直接放到 tests/gen_lib/ 下
+# 将 libcepo.a 直接放到 test/gen_lib/ 下
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}/gen_lib")
 
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/.." cepo_build)
@@ -531,7 +583,7 @@ add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/.." cepo_build)
 
 ## 3. item 的构成
 
-每个 item 位于 `tests/<unit>/<item>/`，包含以下文件：
+每个 item 位于 `test/units/<unit>/<item>/`，包含以下文件：
 
 | 文件 | 必需 | 说明 |
 |---|---|---|
@@ -553,22 +605,22 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 add_executable(<item> test.cpp)
 
 target_include_directories(<item> PRIVATE
-	"${CMAKE_CURRENT_SOURCE_DIR}/../../../include"
+	"${CMAKE_CURRENT_SOURCE_DIR}/../../../../include"
 )
 
 target_link_libraries(<item> PRIVATE
-	"${CMAKE_CURRENT_SOURCE_DIR}/../../gen_lib/libcepo.a"
+	"${CMAKE_CURRENT_SOURCE_DIR}/../../../gen_lib/libcepo.a"
 )
 ```
 
 关键约定：
 
 - 可执行文件名等于 item 目录名。运行器在构建后查找
-  `tests/<unit>/<item>/.build/<item>`。
-- 运行时的当前工作目录是 item 目录（`tests/<unit>/<item>/`），既不是构建
+  `test/units/<unit>/<item>/.build/<item>`。
+- 运行时的当前工作目录是 item 目录（`test/units/<unit>/<item>/`），既不是构建
   目录也不是项目根目录。
-- 头文件路径 `../../../include` 从 item 目录到达 `<项目根目录>/include`。
-- 链接路径 `../../gen_lib/libcepo.a` 指向共享归档文件。
+- 头文件路径 `../../../../include` 从 item 目录到达 `<项目根目录>/include`。
+- 链接路径 `../../../gen_lib/libcepo.a` 指向共享归档文件。
 - 由于归档文件以绝对路径引用，CMake 将其视为链接依赖，`libcepo.a` 重建后
   item 会自动重新链接。
 
@@ -636,8 +688,8 @@ timeout=5000
 lua test.lua
 ```
 
-扫描 `tests/` 下的所有 unit（除 `gen_lib` 以外的非隐藏目录），再扫描每个
-unit 下的所有 item。
+扫描 `test/units/` 下的所有 unit（所有非隐藏目录），再扫描每个 unit 下的
+所有 item。不再需要按名称排除任何目录。
 
 运行某个 unit 的全部 item
 
@@ -679,7 +731,7 @@ CLI 规则（严格）：
 | 0 | 所有选中的 item 均通过 |
 | 1 | 至少有一个 item 失败 |
 | 2 | CLI 错误；未构建、未运行任何内容 |
-| 4 | `tests/gen_lib/libcepo.a` 构建失败 |
+| 4 | `test/gen_lib/libcepo.a` 构建失败 |
 
 退出码 1 与 2 的区别在于：2 表示这次运行根本没有开始，属于调用方参数问题；
 1 表示运行已经完成，确实存在失败的 item。构建共享库时的致命错误单独用 4
@@ -706,7 +758,21 @@ Failed items:
 
 ---
 
-## 7. 生成新的 item
+## 7. 管理 item
+
+`test/units/` 下的 item 目录只属于两个脚本，不属于任何其它工具：
+
+```sh
+lua make_test_item.lua <unit>.<item> [<unit>.<item> ...]     # 创建
+lua remove_test_item.lua <unit>.<item> [<unit>.<item> ...]   # 删除
+```
+
+用其它任何方式创建或删除 item 目录——`mkdir`、编辑器、`cp -r` 一个已有
+item、`rm`、文件管理器——行为未定义：item 不只是一个文件夹，它带有生成的
+`CMakeLists.txt`，其中的头文件与链接路径取决于目录深度；而一个不含 item 的
+unit 也不是合法状态。
+
+### 创建 item
 
 ```sh
 lua make_test_item.lua <unit>.<item> [<unit>.<item> ...]
@@ -717,19 +783,18 @@ lua make_test_item.lua <unit>.<item> [<unit>.<item> ...]
   - 以小写字母或下划线开头，
   - 后接小写字母、数字或下划线，
   - 允许数字，但不能作为首字符。
-- unit 名 `gen_lib` 为保留名，会被拒绝。`test.lua` 在扫描 unit 时排除了该
-  名称，因此建在该 unit 下的 item 永远不会被执行。使用保留名会终止整个调用：
-  若多个参数中有一个使用它，则不会创建任何 item，其余合法参数也不会生效。
 - 目标目录必须尚不存在。`make_test_item.lua` 会先检查全部目标；只要有一个
   已存在，就不创建任何内容。
 - 一次调用可以创建多个 item。
 
 对每个 item，生成器创建：
 
-- `tests/<unit>/<item>/CMakeLists.txt`
+- `test/units/<unit>/<item>/CMakeLists.txt`
   - project 名称为 item 名的大写形式
   - target／可执行文件名称为 item 名的小写形式
-- `tests/<unit>/<item>/test.cpp`：
+  - 头文件路径为 `../../../../include`
+  - 链接的归档文件为 `../../../gen_lib/libcepo.a`
+- `test/units/<unit>/<item>/test.cpp`：
   ```cpp
   auto main() -> int
   {
@@ -737,6 +802,22 @@ lua make_test_item.lua <unit>.<item> [<unit>.<item> ...]
   ```
 - 不生成 `metadata.txt`；需要 `expect_compile_error=true` 或自定义超时时
   手动添加。
+
+### 删除 item
+
+```sh
+lua remove_test_item.lua <unit>.<item> [<unit>.<item> ...]
+```
+
+参数解析与 `make_test_item.lua` 完全一致：同样的格式、同样的名称规则、重复
+参数会被拒绝。区别在于预期相反——目标目录必须存在。所有参数都校验通过后才
+开始删除，因此一次传入多个 item 时即使有一个写错，也不会产生任何删除。
+
+每个被删除的 item，其 `test/units/<unit>/<item>/` 目录连同内部全部内容（包括
+`.build/`）一起删除。若某个 unit 的最后一个 item 被删除，该 unit 目录也会被
+删除，因为空 unit 不是合法状态——`test.lua` 在其中找不到任何可运行的 item。
+
+对于没有涉及的对象脚本保持沉默：unit 下还有其它 item 时，unit 不会被删除。
 
 示例：
 
@@ -751,11 +832,11 @@ lua make_test_item.lua result.construction result.unwrap
 
 增量构建
 
-- `tests/gen_lib/` 是真实的 CMake 构建目录，应在多次运行之间保留。删除它
+- `test/gen_lib/` 是真实的 CMake 构建目录，应在多次运行之间保留。删除它
   会强制全量重建 `libcepo.a`。
 - 每个 item 保留自己的 `.build/`，不要在不同 item 之间混用内容。
 - 若某个 item 行为异常（例如一次失败的重新构建之后仍复用了上一次成功构建
-  留下的旧可执行文件），删除 `tests/<unit>/<item>/.build/` 后重试。
+  留下的旧可执行文件），删除 `test/units/<unit>/<item>/.build/` 后重试。
 
 运行期间的临时文件
 
@@ -785,25 +866,26 @@ item 的约束
 
 - `test.cpp` 是唯一预期的源文件。若需要更多源文件，说明该 item 承担的职责
   过多，应拆分。
-- unit 目录本身只是容器，直接放在 `tests/<unit>/` 下的普通文件会被忽略。
-- `gen_lib` 按名称被排除在 unit 扫描之外，不要创建名为 `gen_lib` 的 unit。
+- unit 目录本身只是容器，直接放在 `test/units/<unit>/` 下的普通文件会被忽略。
+- `test/gen_lib/` 与 `test/units/` 平级，因此 unit 即使叫 `gen_lib` 也不会与
+  构建目录冲突。
 
 ---
 
 ## 9. 独立检查
 
-`tests/` 下的检查全部从工作区源码构建 CEPO。它们能回答一个问题——代码是否
+`test/` 下的检查全部从工作区源码构建 CEPO。它们能回答一个问题——代码是否
 编译、行为是否正确——但对“使用已安装 CEPO 的项目能否找到它”没有任何说明。
 本节的两个检查补上这部分。
 
 | 运行器 | 目录 | 用途 | 接入 CEPO 的方式 |
 |---|---|---|---|
-| `quick_test.lua` | `quick_test/` | 写代码过程中的临时验证 | 对仓库根目录 `add_subdirectory` |
-| `dependency_test.lua` | `dependency_test/` | 验证 `install/unix.lua -i` 安装结果可用 | `include("$ENV{CEPO_CMAKE}")` |
+| `quick_test.lua` | `test/quick_test/` | 写代码过程中的临时验证 | 对仓库根目录 `add_subdirectory` |
+| `dependency_test.lua` | `test/dependency_test/` | 验证 `install/unix.lua -i` 安装结果可用 | `include("$ENV{CEPO_CMAKE}")` |
 
 ### `quick_test` —— 写完代码立即验证
 
-`quick_test/main.cpp` 是一个草稿文件。它的用途是贴一段代码，执行
+`test/quick_test/main.cpp` 是一个草稿文件。它的用途是贴一段代码，执行
 `lua quick_test.lua`，立刻得到结果，不必经过 `make_test_item.lua`、metadata
 或 unit/item 扫描。它通过 `add_subdirectory` 链接 CEPO，因此直接针对工作区
 源码编译，既不需要 `CEPO_CMAKE`，也不需要事先安装。

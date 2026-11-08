@@ -1,17 +1,17 @@
--- Generate a new test item directory under tests/<unit>/<item>/.
+-- Create a new test item under test/units/<unit>/<item>/.
 --
 -- Usage:
 --   lua make_test_item.lua unit.item [unit.item ...]
 --
 -- Each argument is "unit.item"; unit and item names must consist only of
--- lowercase ASCII letters, numbers and underscores. The target directories must not
--- exist yet.
+-- lowercase ASCII letters, numbers and underscores. The target directories must
+-- not exist yet.
 --
--- The unit name "gen_lib" is reserved: test.lua excludes it from unit scanning,
--- so an item placed there would never run.
+-- An item directory is owned by this script and by remove_test_item.lua: it
+-- carries a generated CMakeLists.txt whose include and link paths depend on the
+-- layout above. Creating or deleting items by any other means is undefined.
 
--- Unit names that test.lua never scans.
-local RESERVED_UNITS = { gen_lib = true }
+local UNITS_DIR = "test/units"
 
 local function fail(msg)
 	io.stderr:write("error: " .. msg .. "\n")
@@ -64,9 +64,6 @@ for _, a in ipairs(arg) do
 	end
 	check_name(unit, "unit")
 	check_name(item, "item")
-	if RESERVED_UNITS[unit] then
-		fail("unit name '" .. unit .. "' is reserved and is not scanned by test.lua")
-	end
 	local key = unit .. "." .. item
 	if seen[key] then
 		fail("duplicate argument '" .. a .. "'")
@@ -77,7 +74,7 @@ end
 
 -- Make sure none of the target directories exist yet.
 for _, t in ipairs(tasks) do
-	local idir = "tests/" .. t.unit .. "/" .. t.item
+	local idir = UNITS_DIR .. "/" .. t.unit .. "/" .. t.item
 	if is_dir(idir) then
 		fail("item directory already exists: " .. idir)
 	end
@@ -98,11 +95,11 @@ local function item_cmakelists(item)
 		"add_executable(" .. target_name .. " test.cpp)",
 		"",
 		"target_include_directories(" .. target_name .. " PRIVATE",
-		"\t\"${CMAKE_CURRENT_SOURCE_DIR}/../../../include\"",
+		"\t\"${CMAKE_CURRENT_SOURCE_DIR}/../../../../include\"",
 		")",
 		"",
 		"target_link_libraries(" .. target_name .. " PRIVATE",
-		"\t\"${CMAKE_CURRENT_SOURCE_DIR}/../../gen_lib/libcepo.a\"",
+		"\t\"${CMAKE_CURRENT_SOURCE_DIR}/../../../gen_lib/libcepo.a\"",
 		")",
 		"",
 	}, "\n")
@@ -111,7 +108,7 @@ end
 local TEST_CPP = "auto main() -> int\n{\n}\n"
 
 for _, t in ipairs(tasks) do
-	local idir = "tests/" .. t.unit .. "/" .. t.item
+	local idir = UNITS_DIR .. "/" .. t.unit .. "/" .. t.item
 	mkdir_p(idir)
 	write_file(idir .. "/CMakeLists.txt", item_cmakelists(t.item))
 	write_file(idir .. "/test.cpp", TEST_CPP)

@@ -13,7 +13,7 @@ local function run(cmd, what)
 	return false
 end
 
-local src_dir = script_dir .. "/quick_test"
+local src_dir = script_dir .. "/test/quick_test"
 local build_dir = src_dir .. "/.build"
 local exe = build_dir .. "/quick_test"
 

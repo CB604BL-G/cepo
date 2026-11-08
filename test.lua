@@ -4,11 +4,18 @@
 --   lua test.lua
 --   lua test.lua --u<unit> [--c<item> ...] [--u<unit> ...]
 --
+-- Units live in test/units/. The shared library is built into test/gen_lib/,
+-- which is a sibling of test/units/ and therefore never scanned as a unit.
+--
 -- Exit codes:
 --   0  all selected items passed
 --   1  at least one item failed
 --   2  CLI errors; nothing was built or run
---   4  tests/gen_lib/libcepo.a failed to build
+--   4  test/gen_lib/libcepo.a failed to build
+
+-- Everything the runner touches is derived from these two.
+local UNITS_DIR = "test/units"
+local GEN_LIB_DIR = "test/gen_lib"
 
 local function sh_quote(s)
 	return "'" .. s:gsub("'", "'\\''") .. "'"
@@ -108,7 +115,7 @@ local function parse_cli(argv)
 	end
 
 	for _, u in ipairs(units) do
-		local udir = "tests/" .. u.name
+		local udir = UNITS_DIR .. "/" .. u.name
 		if not is_dir(udir) then
 			errors[#errors + 1] = "unit not found: '" .. u.name .. "'"
 		else
@@ -178,20 +185,20 @@ end
 --------------------------------------------------------------------------------
 
 local function build_lib()
-	local ok, out, code = capture("cmake -S tests -B tests/gen_lib")
+	local ok, out, code = capture("cmake -S test -B " .. GEN_LIB_DIR)
 	if not ok then
-		io.stderr:write("configure tests/gen_lib failed (exit " .. tostring(code) .. ")\n")
+		io.stderr:write("configure " .. GEN_LIB_DIR .. " failed (exit " .. tostring(code) .. ")\n")
 		io.stderr:write(out)
 		return false
 	end
-	ok, out, code = capture("cmake --build tests/gen_lib")
+	ok, out, code = capture("cmake --build " .. GEN_LIB_DIR)
 	if not ok then
 		io.stderr:write("build libcepo.a failed (exit " .. tostring(code) .. ")\n")
 		io.stderr:write(out)
 		return false
 	end
-	if not is_file("tests/gen_lib/libcepo.a") then
-		io.stderr:write("error: tests/gen_lib/libcepo.a was not produced\n")
+	if not is_file(GEN_LIB_DIR .. "/libcepo.a") then
+		io.stderr:write("error: " .. GEN_LIB_DIR .. "/libcepo.a was not produced\n")
 		return false
 	end
 	return true
@@ -357,12 +364,10 @@ if #errors > 0 then
 	os.exit(2)
 end
 
--- No --u given: scan tests/ for all units.
+-- No --u given: scan test/units/ for all units.
 if #units == 0 then
-	for _, name in ipairs(list_subdirs("tests")) do
-		if name ~= "gen_lib" then
-			units[#units + 1] = { name = name, items = {}, item_set = {} }
-		end
+	for _, name in ipairs(list_subdirs(UNITS_DIR)) do
+		units[#units + 1] = { name = name, items = {}, item_set = {} }
 	end
 end
 
@@ -377,10 +382,10 @@ for _, unit in ipairs(units) do
 	if #unit.items > 0 then
 		items = unit.items
 	else
-		items = list_subdirs("tests/" .. unit.name)
+		items = list_subdirs(UNITS_DIR .. "/" .. unit.name)
 	end
 	for _, item_name in ipairs(items) do
-		local idir = "tests/" .. unit.name .. "/" .. item_name
+		local idir = UNITS_DIR .. "/" .. unit.name .. "/" .. item_name
 		test_one_item(unit.name, item_name, idir, results)
 	end
 end
