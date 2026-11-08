@@ -1,8 +1,0 @@
-[
-{
-  "directory": "/data/data/com.termux/files/home/projects/cepo/.build",
-  "command": "/data/data/com.termux/files/usr/bin/c++  -I/data/data/com.termux/files/home/projects/cepo/include -O3 -DNDEBUG -o CMakeFiles/cepo_library.dir/src/result/bad_result_unwrap.cpp.o -c /data/data/com.termux/files/home/projects/cepo/src/result/bad_result_unwrap.cpp",
-  "file": "/data/data/com.termux/files/home/projects/cepo/src/result/bad_result_unwrap.cpp",
-  "output": "CMakeFiles/cepo_library.dir/src/result/bad_result_unwrap.cpp.o"
-}
-]

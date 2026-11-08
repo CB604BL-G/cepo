@@ -4,3 +4,4 @@
 /test/gen_lib/
 /test/quick_test/.build/
 /test/dependency_test/.build/
+/compile_commands.json

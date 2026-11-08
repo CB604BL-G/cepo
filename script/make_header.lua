@@ -1,5 +1,16 @@
 local PREFIX = "CEPO_"
 
+-- The scripts live in <project-root>/script/, so the project root is the
+-- parent of this file. Running them from the project root is the normal case
+-- and keeps the paths short: ROOT collapses to "." then.
+local script_dir = (arg[0] or ""):match("^(.*)[/\\][^/\\]*$") or "."
+local ROOT = (script_dir == "script") and "." or (script_dir .. "/..")
+
+-- Path of `rel` relative to the project root.
+local function at(rel)
+	return (ROOT == ".") and rel or (ROOT .. "/" .. rel)
+end
+
 local function fail(msg)
 	io.stderr:write("error: " .. msg .. "\n")
 	os.exit(1)
@@ -21,7 +32,7 @@ end
 
 local argv = arg
 if #argv < 1 then
-	fail("usage: lua make_header.lua path/to/header.hpp")
+	fail("usage: lua script/make_header.lua path/to/header.hpp")
 end
 
 local input = argv[1]
@@ -45,7 +56,7 @@ if rel:sub(1, #"include/cepo/") == "include/cepo/" then
 	rel = rel:sub(#"include/cepo/" + 1)
 end
 
-local output = "include/cepo/" .. rel
+local output = at("include/cepo/" .. rel)
 
 -- Header guard: uppercase, non-alphanumeric -> underscore
 local upper = rel:upper():gsub("[^A-Z0-9]", "_")

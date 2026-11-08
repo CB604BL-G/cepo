@@ -1,8 +1,8 @@
 -- Test runner for the cepo project.
 --
 -- Usage:
---   lua test.lua
---   lua test.lua --u<unit> [--c<item> ...] [--u<unit> ...]
+--   lua script/test.lua
+--   lua script/test.lua --u<unit> [--c<item> ...] [--u<unit> ...]
 --
 -- Units live in test/units/. The shared library is built into test/gen_lib/,
 -- which is a sibling of test/units/ and therefore never scanned as a unit.
@@ -13,9 +13,20 @@
 --   2  CLI errors; nothing was built or run
 --   4  test/gen_lib/libcepo.a failed to build
 
+-- The scripts live in <project-root>/script/, so the project root is the
+-- parent of this file. Running them from the project root is the normal case
+-- and keeps the paths short: ROOT collapses to "." then.
+local script_dir = (arg[0] or ""):match("^(.*)[/\\][^/\\]*$") or "."
+local ROOT = (script_dir == "script") and "." or (script_dir .. "/..")
+
+-- Path of `rel` relative to the project root.
+local function at(rel)
+	return (ROOT == ".") and rel or (ROOT .. "/" .. rel)
+end
+
 -- Everything the runner touches is derived from these two.
-local UNITS_DIR = "test/units"
-local GEN_LIB_DIR = "test/gen_lib"
+local UNITS_DIR = at("test/units")
+local GEN_LIB_DIR = at("test/gen_lib")
 
 local function sh_quote(s)
 	return "'" .. s:gsub("'", "'\\''") .. "'"
@@ -185,7 +196,7 @@ end
 --------------------------------------------------------------------------------
 
 local function build_lib()
-	local ok, out, code = capture("cmake -S test -B " .. GEN_LIB_DIR)
+	local ok, out, code = capture("cmake -S " .. at("test") .. " -B " .. GEN_LIB_DIR)
 	if not ok then
 		io.stderr:write("configure " .. GEN_LIB_DIR .. " failed (exit " .. tostring(code) .. ")\n")
 		io.stderr:write(out)

@@ -1,8 +1,8 @@
 -- Dependency test runner for the cepo project.
 --
 -- Usage:
---   lua dependency_test.lua
---   lua dependency_test.lua [-b|-r|--] [args...]
+--   lua script/dependency_test.lua
+--   lua script/dependency_test.lua [-b|-r|--] [args...]
 --
 --   -b, --build   configure and build only
 --   -r, --run     run only (requires a prior build)
@@ -21,7 +21,16 @@
 --   1  build or run failed
 --   2  invalid argument, or CEPO_CMAKE is unset or does not point at a file
 
-local script_dir = arg[0]:match("^(.*)[/\\]") or "."
+-- The scripts live in <project-root>/script/, so the project root is the
+-- parent of this file. Running them from the project root is the normal case
+-- and keeps the paths short: ROOT collapses to "." then.
+local script_dir = (arg[0] or ""):match("^(.*)[/\\][^/\\]*$") or "."
+local ROOT = (script_dir == "script") and "." or (script_dir .. "/..")
+
+-- Path of `rel` relative to the project root.
+local function at(rel)
+	return (ROOT == ".") and rel or (ROOT .. "/" .. rel)
+end
 
 local function shq(s)
 	return "'" .. s:gsub("'", "'\\''") .. "'"
@@ -43,7 +52,7 @@ local function is_file_basic(path)
 	return true
 end
 
-local src_dir = script_dir .. "/test/dependency_test"
+local src_dir = at("test/dependency_test")
 local build_dir = src_dir .. "/.build"
 local exe = build_dir .. "/dependency_test"
 
@@ -93,7 +102,7 @@ while i <= #arg do
 	elseif a == "-r" or a == "--run" then
 		do_run = true
 	elseif a == "-h" or a == "--help" then
-		print("Usage: lua dependency_test.lua [-b|-r|--] [args...]")
+		print("Usage: lua script/dependency_test.lua [-b|-r|--] [args...]")
 		print("  -b, --build   build only")
 		print("  -r, --run     run only (requires prior build)")
 		print("  (no flag)     build then run")

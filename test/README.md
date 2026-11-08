@@ -4,14 +4,16 @@ This document describes the test workflow for the `cepo` project: how test
 items are laid out on disk, how to generate new ones, how to run them, and
 which conventions must be respected.
 
+The scripts referenced below are described individually in
+[`../script/README.md`](../script/README.md).
+
 The workflow assumes:
 
 - Unix-like system (Linux, macOS, Android/Termux, ...)
 - `lua` **5.4**
 - `cmake` **3.20+**
 - You run every command from the **project root** (the directory that
-  contains `test.lua`, `make_test_item.lua`, `remove_test_item.lua`,
-  `include/`, `src/`, ...)
+  contains `script/`, `test/`, `include/` and `src/`)
 
 ---
 
@@ -39,11 +41,14 @@ The workflow assumes:
 │   ├── quick_test/              ad-hoc check, links cepo via add_subdirectory
 │   ├── dependency_test/         downstream consumption check via CEPO_CMAKE
 │   └── README.md                this document
-├── test.lua                     test runner
-├── make_test_item.lua           item generator
-├── remove_test_item.lua         item remover
-├── quick_test.lua               runner for test/quick_test/
-└── dependency_test.lua          runner for test/dependency_test/
+└── script/
+    ├── README.md                script reference
+    ├── test.lua                 test runner
+    ├── quick_test.lua           runner for test/quick_test/
+    ├── dependency_test.lua      runner for test/dependency_test/
+    ├── make_test_item.lua       item generator
+    ├── remove_test_item.lua     item remover
+    └── make_header.lua          public header generator
 
 ```
 
@@ -52,19 +57,19 @@ The workflow assumes:
 - Each item is compiled and run **independently**. Items do not share
   build directories.
 - `test/gen_lib/` is a sibling of `test/units/`, not a unit, so nothing
-  generated lives inside the directory that `test.lua` scans.
+  generated lives inside the directory that `script/test.lua` scans.
 - `test/quick_test/` and `test/dependency_test/` are single-program checks,
   not test units. They are driven by their own runners, described in
   section 9.
-- Item directories are created and deleted **only** by `make_test_item.lua`
-  and `remove_test_item.lua`, see section 7. Creating or deleting them by
+- Item directories are created and deleted **only** by `script/make_test_item.lua`
+  and `script/remove_test_item.lua`, see section 7. Creating or deleting them by
   any other means is undefined.
 
 ---
 
 ## 2. Building `libcepo.a`
 
-The shared static library is built by `test.lua` **once** per run, before
+The shared static library is built by `script/test.lua` **once** per run, before
 any item is compiled, using `test/CMakeLists.txt`:
 
 ```
@@ -80,7 +85,7 @@ single archive.
 - The build is **incremental**. `test/gen_lib/` keeps CMake's cache and
   object files on purpose. Do not delete it between runs unless you want a
   full rebuild.
-- If the library fails to build, `test.lua` prints the error and exits
+- If the library fails to build, `script/test.lua` prints the error and exits
   with code **4** without running any item.
 
 `test/CMakeLists.txt` is expected to look like:
@@ -111,7 +116,7 @@ CMakeLists.txt yes Builds an executable named after the item dir
 test.cpp yes The single source file
 metadata.txt no Defaults apply if missing
 
-The generated CMakeLists.txt (see make_test_item.lua) follows this
+The generated CMakeLists.txt (see script/make_test_item.lua) follows this
 template:
 
 ```cmake
@@ -179,7 +184,7 @@ timeout=5000
 
 ## 5. Result Rules
 
-For each item, test.lua first builds it, then applies:
+For each item, script/test.lua first builds it, then applies:
 
 expect_compile_error = true
 
@@ -209,7 +214,7 @@ Always run from the project root.
 Run everything
 
 ```sh
-lua test.lua
+lua script/test.lua
 ```
 
 Scans test/units/ for all units (every non-hidden directory), then every
@@ -218,19 +223,19 @@ item inside each unit. Nothing needs to be excluded by name.
 Run all items of one unit
 
 ```sh
-lua test.lua --uresult
+lua script/test.lua --uresult
 ```
 
 Run specific items of one unit
 
 ```sh
-lua test.lua --uresult --cconstruction --cunwrap
+lua script/test.lua --uresult --cconstruction --cunwrap
 ```
 
 Run several units
 
 ```sh
-lua test.lua --uresult --cconstruction --uresult_bad --cunwrap
+lua script/test.lua --uresult --cconstruction --uresult_bad --cunwrap
 ```
 
 CLI rules (strict)
@@ -246,7 +251,7 @@ CLI rules (strict)
   exist on disk, that is recorded as an error, but parsing continues.
 
 All CLI errors are collected first. If there is at least one error,
-test.lua prints every error, exits with code 2, and does not
+script/test.lua prints every error, exits with code 2, and does not
 build or run anything.
 
 Exit codes
@@ -263,7 +268,7 @@ codes 1 and 2 both originate from a completed or rejected run.
 
 Summary
 
-At the end, test.lua prints:
+At the end, script/test.lua prints:
 
 ```
 Total: X units, Y items (passed: P, failed: F)
@@ -288,8 +293,8 @@ Item directories under `test/units/` belong to two scripts and to nothing
 else:
 
 ```sh
-lua make_test_item.lua <unit>.<item> [<unit>.<item> ...]     # create
-lua remove_test_item.lua <unit>.<item> [<unit>.<item> ...]   # delete
+lua script/make_test_item.lua <unit>.<item> [<unit>.<item> ...]     # create
+lua script/remove_test_item.lua <unit>.<item> [<unit>.<item> ...]   # delete
 ```
 
 Creating or deleting an item directory by any other means - `mkdir`, an
@@ -301,7 +306,7 @@ items is not a valid state.
 ### Creating items
 
 ```sh
-lua make_test_item.lua <unit>.<item> [<unit>.<item> ...]
+lua script/make_test_item.lua <unit>.<item> [<unit>.<item> ...]
 ```
 
 · Each argument is unit.item.
@@ -309,7 +314,7 @@ lua make_test_item.lua <unit>.<item> [<unit>.<item> ...]
   · start with a lowercase letter or underscore,
   · followed by lowercase letters, digits, or underscores.
   · Digits are allowed but not as the first character.
-· The target directories must not exist yet. make_test_item.lua
+· The target directories must not exist yet. script/make_test_item.lua
   checks all targets first; if any exists, nothing is created.
 · Several items can be created in one invocation.
 
@@ -332,10 +337,10 @@ For each item, the generator creates:
 ### Removing items
 
 ```sh
-lua remove_test_item.lua <unit>.<item> [<unit>.<item> ...]
+lua script/remove_test_item.lua <unit>.<item> [<unit>.<item> ...]
 ```
 
-The arguments are parsed exactly like `make_test_item.lua`: same format,
+The arguments are parsed exactly like `script/make_test_item.lua`: same format,
 same name rules, duplicates rejected. The difference is the expectation,
 the target directories must exist. Every argument is validated before
 anything is deleted, so a typo in a list of several items removes nothing.
@@ -343,7 +348,7 @@ anything is deleted, so a typo in a list of several items removes nothing.
 For each removed item the script deletes
 `test/units/<unit>/<item>/` with everything inside it, including `.build/`.
 A unit whose last item goes away is deleted as well, because an empty unit
-is not a valid state: `test.lua` would simply find nothing to run in it.
+is not a valid state: `script/test.lua` would simply find nothing to run in it.
 
 The script is silent about anything it did not touch: if a unit still has
 other items, it stays.
@@ -351,11 +356,11 @@ other items, it stays.
 ### Examples
 
 ```sh
-lua make_test_item.lua result.construction
-lua make_test_item.lua result.construction result.unwrap
+lua script/make_test_item.lua result.construction
+lua script/make_test_item.lua result.construction result.unwrap
 
-lua remove_test_item.lua result.construction
-lua remove_test_item.lua result.construction result.unwrap   # last one: unit goes too
+lua script/remove_test_item.lua result.construction
+lua script/remove_test_item.lua result.construction result.unwrap   # last one: unit goes too
 ```
 
 ---
@@ -373,7 +378,7 @@ Incremental builds
 
 Temporary files during runs
 
-For each run, test.lua writes three temporary files inside the item
+For each run, script/test.lua writes three temporary files inside the item
 directory:
 
 ```
@@ -418,14 +423,14 @@ this section cover the missing questions.
 
 | Runner | Directory | Purpose | CEPO is consumed via |
 |---|---|---|---|
-| `quick_test.lua` | `test/quick_test/` | Ad-hoc check while editing | `add_subdirectory` of the repository root |
-| `dependency_test.lua` | `test/dependency_test/` | Verify an installation produced by `install/unix.lua -i` is usable | `include("$ENV{CEPO_CMAKE}")` |
+| `script/quick_test.lua` | `test/quick_test/` | Ad-hoc check while editing | `add_subdirectory` of the repository root |
+| `script/dependency_test.lua` | `test/dependency_test/` | Verify an installation produced by `install/unix.lua -i` is usable | `include("$ENV{CEPO_CMAKE}")` |
 
 ### `quick_test` — checking code right after writing it
 
 `test/quick_test/main.cpp` is a scratch file. The intent is to paste a snippet,
-run `lua quick_test.lua`, and get an answer immediately, without going through
-`make_test_item.lua`, metadata, or the unit/item scan. It links CEPO through
+run `lua script/quick_test.lua`, and get an answer immediately, without going through
+`script/make_test_item.lua`, metadata, or the unit/item scan. It links CEPO through
 `add_subdirectory`, so it compiles against the working tree and needs neither
 `CEPO_CMAKE` nor a prior installation.
 
@@ -459,7 +464,7 @@ lua install/unix.lua -i
 exec $SHELL
 
 # In a new shell
-lua dependency_test.lua
+lua script/dependency_test.lua
 ```
 
 The runner checks `CEPO_CMAKE` before doing anything else, because a missing or
@@ -475,7 +480,7 @@ Code Meaning
 Both runners accept the same options:
 
 ```sh
-lua quick_test.lua [-b|-r|--] [args...]
+lua script/quick_test.lua [-b|-r|--] [args...]
 ```
 
 · `-b`, `--build` — configure and build only.
@@ -494,13 +499,15 @@ The build directory is `<directory>/.build/` and is not committed.
 本文档描述 `cepo` 项目的测试流程：测试项在磁盘上如何组织、如何生成新的
 测试项、如何运行，以及需要遵守的约定。
 
+下面提到的各个脚本，其单独说明见 [`../script/README.md`](../script/README.md)。
+
 本文档假设：
 
 - Unix-like 系统（Linux、macOS、Android/Termux 等）
 - `lua` **5.4**
 - `cmake` **3.20** 或更高版本
-- 所有命令均在**项目根目录**执行，即包含 `test.lua`、`make_test_item.lua`、
-  `remove_test_item.lua`、`include/`、`src/` 的目录
+- 所有命令均在**项目根目录**执行，即包含 `script/`、`test/`、`include/`、`src/`
+  的目录
 
 ---
 
@@ -527,28 +534,31 @@ The build directory is `<directory>/.build/` and is not committed.
 │   ├── quick_test/              临时验证，通过 add_subdirectory 链接 cepo
 │   ├── dependency_test/         通过 CEPO_CMAKE 验证下游接入
 │   └── README.md                本文档
-├── test.lua                     测试运行器
-├── make_test_item.lua           测试项生成器
-├── remove_test_item.lua         测试项删除器
-├── quick_test.lua               `test/quick_test/` 的运行器
-└── dependency_test.lua          `test/dependency_test/` 的运行器
+└── script/
+    ├── README.md                脚本说明
+    ├── test.lua                 测试运行器
+    ├── quick_test.lua           `test/quick_test/` 的运行器
+    ├── dependency_test.lua      `test/dependency_test/` 的运行器
+    ├── make_test_item.lua       测试项生成器
+    ├── remove_test_item.lua     测试项删除器
+    └── make_header.lua          公开头文件生成器
 ```
 
 - **unit** 是 `test/units/` 下一级目录。
 - **item** 是 unit 下一级目录。
 - 每个 item 独立编译、独立运行，item 之间不共享构建目录。
-- `test/gen_lib/` 与 `test/units/` 平级，不是 unit，因此 `test.lua` 扫描的
+- `test/gen_lib/` 与 `test/units/` 平级，不是 unit，因此 `script/test.lua` 扫描的
   目录里不会再出现由工具生成的目录。
 - `test/quick_test/` 与 `test/dependency_test/` 是单一程序的检查，不属于测试
   unit，由各自的运行器驱动，见第 9 节。
-- item 目录**只能**由 `make_test_item.lua` 与 `remove_test_item.lua` 创建和
+- item 目录**只能**由 `script/make_test_item.lua` 与 `script/remove_test_item.lua` 创建和
   删除，见第 7 节；其它任何方式的创建或删除行为未定义。
 
 ---
 
 ## 2. 构建 `libcepo.a`
 
-`test.lua` 在编译任何 item 之前，通过 `test/CMakeLists.txt` **一次性**构建
+`script/test.lua` 在编译任何 item 之前，通过 `test/CMakeLists.txt` **一次性**构建
 共享静态库：
 
 ```
@@ -560,7 +570,7 @@ cmake --build test/gen_lib
 
 - 构建是**增量的**。`test/gen_lib/` 会保留 CMake 缓存与目标文件，除非需要
   全量重建，否则不要在两次运行之间删除它。
-- 若该库构建失败，`test.lua` 会输出错误并以退出码 **4** 终止，不运行任何 item。
+- 若该库构建失败，`script/test.lua` 会输出错误并以退出码 **4** 终止，不运行任何 item。
 
 `test/CMakeLists.txt` 的内容应为：
 
@@ -591,7 +601,7 @@ add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/.." cepo_build)
 | `test.cpp` | 是 | 唯一的源文件 |
 | `metadata.txt` | 否 | 缺失时使用默认值 |
 
-生成的 `CMakeLists.txt`（见 `make_test_item.lua`）遵循以下模板：
+生成的 `CMakeLists.txt`（见 `script/make_test_item.lua`）遵循以下模板：
 
 ```cmake
 cmake_minimum_required(VERSION 3.20)
@@ -656,7 +666,7 @@ timeout=5000
 
 ## 5. 结果判定规则
 
-对每个 item，`test.lua` 先构建，再按以下规则判定：
+对每个 item，`script/test.lua` 先构建，再按以下规则判定：
 
 `expect_compile_error = true`
 
@@ -685,7 +695,7 @@ timeout=5000
 运行全部
 
 ```sh
-lua test.lua
+lua script/test.lua
 ```
 
 扫描 `test/units/` 下的所有 unit（所有非隐藏目录），再扫描每个 unit 下的
@@ -694,19 +704,19 @@ lua test.lua
 运行某个 unit 的全部 item
 
 ```sh
-lua test.lua --uresult
+lua script/test.lua --uresult
 ```
 
 运行某个 unit 下的指定 item
 
 ```sh
-lua test.lua --uresult --cconstruction --cunwrap
+lua script/test.lua --uresult --cconstruction --cunwrap
 ```
 
 运行多个 unit
 
 ```sh
-lua test.lua --uresult --cconstruction --uresult_bad --cunwrap
+lua script/test.lua --uresult --cconstruction --uresult_bad --cunwrap
 ```
 
 CLI 规则（严格）：
@@ -721,7 +731,7 @@ CLI 规则（严格）：
 - 若 `--u<name>` 或 `--c<name>` 指向磁盘上不存在的 unit/item，该情况会被
   记录为错误，但解析继续进行。
 
-所有 CLI 错误会先被收集。只要存在至少一个错误，`test.lua` 会输出全部错误，
+所有 CLI 错误会先被收集。只要存在至少一个错误，`script/test.lua` 会输出全部错误，
 以退出码 **2** 终止，并且不构建、不运行任何内容。
 
 退出码：
@@ -739,7 +749,7 @@ CLI 规则（严格）：
 
 汇总输出：
 
-运行结束时，`test.lua` 输出：
+运行结束时，`script/test.lua` 输出：
 
 ```
 Total: X units, Y items (passed: P, failed: F)
@@ -763,8 +773,8 @@ Failed items:
 `test/units/` 下的 item 目录只属于两个脚本，不属于任何其它工具：
 
 ```sh
-lua make_test_item.lua <unit>.<item> [<unit>.<item> ...]     # 创建
-lua remove_test_item.lua <unit>.<item> [<unit>.<item> ...]   # 删除
+lua script/make_test_item.lua <unit>.<item> [<unit>.<item> ...]     # 创建
+lua script/remove_test_item.lua <unit>.<item> [<unit>.<item> ...]   # 删除
 ```
 
 用其它任何方式创建或删除 item 目录——`mkdir`、编辑器、`cp -r` 一个已有
@@ -775,7 +785,7 @@ unit 也不是合法状态。
 ### 创建 item
 
 ```sh
-lua make_test_item.lua <unit>.<item> [<unit>.<item> ...]
+lua script/make_test_item.lua <unit>.<item> [<unit>.<item> ...]
 ```
 
 - 每个参数形式为 `unit.item`。
@@ -783,7 +793,7 @@ lua make_test_item.lua <unit>.<item> [<unit>.<item> ...]
   - 以小写字母或下划线开头，
   - 后接小写字母、数字或下划线，
   - 允许数字，但不能作为首字符。
-- 目标目录必须尚不存在。`make_test_item.lua` 会先检查全部目标；只要有一个
+- 目标目录必须尚不存在。`script/make_test_item.lua` 会先检查全部目标；只要有一个
   已存在，就不创建任何内容。
 - 一次调用可以创建多个 item。
 
@@ -806,24 +816,24 @@ lua make_test_item.lua <unit>.<item> [<unit>.<item> ...]
 ### 删除 item
 
 ```sh
-lua remove_test_item.lua <unit>.<item> [<unit>.<item> ...]
+lua script/remove_test_item.lua <unit>.<item> [<unit>.<item> ...]
 ```
 
-参数解析与 `make_test_item.lua` 完全一致：同样的格式、同样的名称规则、重复
+参数解析与 `script/make_test_item.lua` 完全一致：同样的格式、同样的名称规则、重复
 参数会被拒绝。区别在于预期相反——目标目录必须存在。所有参数都校验通过后才
 开始删除，因此一次传入多个 item 时即使有一个写错，也不会产生任何删除。
 
 每个被删除的 item，其 `test/units/<unit>/<item>/` 目录连同内部全部内容（包括
 `.build/`）一起删除。若某个 unit 的最后一个 item 被删除，该 unit 目录也会被
-删除，因为空 unit 不是合法状态——`test.lua` 在其中找不到任何可运行的 item。
+删除，因为空 unit 不是合法状态——`script/test.lua` 在其中找不到任何可运行的 item。
 
 对于没有涉及的对象脚本保持沉默：unit 下还有其它 item 时，unit 不会被删除。
 
 示例：
 
 ```sh
-lua make_test_item.lua result.construction
-lua make_test_item.lua result.construction result.unwrap
+lua script/make_test_item.lua result.construction
+lua script/make_test_item.lua result.construction result.unwrap
 ```
 
 ---
@@ -840,7 +850,7 @@ lua make_test_item.lua result.construction result.unwrap
 
 运行期间的临时文件
 
-每次运行，`test.lua` 会在 item 目录内写入三个临时文件：
+每次运行，`script/test.lua` 会在 item 目录内写入三个临时文件：
 
 ```
 .test_runner.sh
@@ -880,13 +890,13 @@ item 的约束
 
 | 运行器 | 目录 | 用途 | 接入 CEPO 的方式 |
 |---|---|---|---|
-| `quick_test.lua` | `test/quick_test/` | 写代码过程中的临时验证 | 对仓库根目录 `add_subdirectory` |
-| `dependency_test.lua` | `test/dependency_test/` | 验证 `install/unix.lua -i` 安装结果可用 | `include("$ENV{CEPO_CMAKE}")` |
+| `script/quick_test.lua` | `test/quick_test/` | 写代码过程中的临时验证 | 对仓库根目录 `add_subdirectory` |
+| `script/dependency_test.lua` | `test/dependency_test/` | 验证 `install/unix.lua -i` 安装结果可用 | `include("$ENV{CEPO_CMAKE}")` |
 
 ### `quick_test` —— 写完代码立即验证
 
 `test/quick_test/main.cpp` 是一个草稿文件。它的用途是贴一段代码，执行
-`lua quick_test.lua`，立刻得到结果，不必经过 `make_test_item.lua`、metadata
+`lua script/quick_test.lua`，立刻得到结果，不必经过 `script/make_test_item.lua`、metadata
 或 unit/item 扫描。它通过 `add_subdirectory` 链接 CEPO，因此直接针对工作区
 源码编译，既不需要 `CEPO_CMAKE`，也不需要事先安装。
 
@@ -915,7 +925,7 @@ lua install/unix.lua -i
 exec $SHELL
 
 # 在新 shell 中
-lua dependency_test.lua
+lua script/dependency_test.lua
 ```
 
 运行器在做任何事之前先检查 `CEPO_CMAKE`，否则变量缺失或非法时会以与问题无关
@@ -930,7 +940,7 @@ lua dependency_test.lua
 两个运行器接受相同的选项：
 
 ```sh
-lua quick_test.lua [-b|-r|--] [args...]
+lua script/quick_test.lua [-b|-r|--] [args...]
 ```
 
 - `-b`、`--build` —— 只 configure 并构建。

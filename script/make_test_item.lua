@@ -1,7 +1,7 @@
 -- Create a new test item under test/units/<unit>/<item>/.
 --
 -- Usage:
---   lua make_test_item.lua unit.item [unit.item ...]
+--   lua script/make_test_item.lua unit.item [unit.item ...]
 --
 -- Each argument is "unit.item"; unit and item names must consist only of
 -- lowercase ASCII letters, numbers and underscores. The target directories must
@@ -11,7 +11,18 @@
 -- carries a generated CMakeLists.txt whose include and link paths depend on the
 -- layout above. Creating or deleting items by any other means is undefined.
 
-local UNITS_DIR = "test/units"
+-- The scripts live in <project-root>/script/, so the project root is the
+-- parent of this file. Running them from the project root is the normal case
+-- and keeps the paths short: ROOT collapses to "." then.
+local script_dir = (arg[0] or ""):match("^(.*)[/\\][^/\\]*$") or "."
+local ROOT = (script_dir == "script") and "." or (script_dir .. "/..")
+
+-- Path of `rel` relative to the project root.
+local function at(rel)
+	return (ROOT == ".") and rel or (ROOT .. "/" .. rel)
+end
+
+local UNITS_DIR = at("test/units")
 
 local function fail(msg)
 	io.stderr:write("error: " .. msg .. "\n")
@@ -50,7 +61,7 @@ local function check_name(s, what)
 end
 
 if #arg == 0 then
-	io.stderr:write("usage: lua make_test_item.lua unit.item [unit.item ...]\n")
+	io.stderr:write("usage: lua script/make_test_item.lua unit.item [unit.item ...]\n")
 	os.exit(1)
 end
 

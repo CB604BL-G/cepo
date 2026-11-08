@@ -57,7 +57,10 @@ cmake -S . -B .build
 cmake --build .build
 ```
 
-The result is `libcepo.a`. The test workflow is described in [test/README.md](test/README.md).
+The result is `libcepo.a`. The test workflow is described in
+[test/README.md](test/README.md), and the developer scripts (test runner,
+item generator, public header generator) in
+[script/README.md](script/README.md).
 
 ---
 
@@ -107,4 +110,6 @@ cmake -S . -B .build
 cmake --build .build
 ```
 
-产物为 `libcepo.a`。测试流程见 [test/README.md](test/README.md)。
+产物为 `libcepo.a`。测试流程见 [test/README.md](test/README.md)，开发脚本
+（测试运行器、测试项生成器、公开头文件生成器）见
+[script/README.md](script/README.md)。

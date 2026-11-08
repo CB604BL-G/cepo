@@ -1,4 +1,13 @@
-local script_dir = arg[0]:match("^(.*)[/\\]") or "."
+-- The scripts live in <project-root>/script/, so the project root is the
+-- parent of this file. Running them from the project root is the normal case
+-- and keeps the paths short: ROOT collapses to "." then.
+local script_dir = (arg[0] or ""):match("^(.*)[/\\][^/\\]*$") or "."
+local ROOT = (script_dir == "script") and "." or (script_dir .. "/..")
+
+-- Path of `rel` relative to the project root.
+local function at(rel)
+	return (ROOT == ".") and rel or (ROOT .. "/" .. rel)
+end
 
 local function shq(s)
 	return "'" .. s:gsub("'", "'\\''") .. "'"
@@ -13,7 +22,7 @@ local function run(cmd, what)
 	return false
 end
 
-local src_dir = script_dir .. "/test/quick_test"
+local src_dir = at("test/quick_test")
 local build_dir = src_dir .. "/.build"
 local exe = build_dir .. "/quick_test"
 
@@ -48,7 +57,7 @@ while i <= #arg do
 	elseif a == "-r" or a == "--run" then
 		do_run = true
 	elseif a == "-h" or a == "--help" then
-		print("Usage: lua quick_test.lua [-b|-r|--] [args...]")
+		print("Usage: lua script/quick_test.lua [-b|-r|--] [args...]")
 		print("  -b, --build   build only")
 		print("  -r, --run     run only (requires prior build)")
 		print("  (no flag)     build then run")
