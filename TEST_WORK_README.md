@@ -374,7 +374,7 @@ this section cover the missing questions.
 | Runner | Directory | Purpose | CEPO is consumed via |
 |---|---|---|---|
 | `quick_test.lua` | `quick_test/` | Ad-hoc check while editing | `add_subdirectory` of the repository root |
-| `dependency_test.lua` | `dependency_test/` | Verify an installation produced by `install.lua` is usable | `include("$ENV{CEPO_CMAKE}")` |
+| `dependency_test.lua` | `dependency_test/` | Verify an installation produced by `install/unix.lua -i` is usable | `include("$ENV{CEPO_CMAKE}")` |
 
 ### `quick_test` — checking code right after writing it
 
@@ -389,7 +389,7 @@ to change frequently and is not a permanent test.
 
 ### `dependency_test` — checking that an installation resolves correctly
 
-This check exists to answer a different question: after running `install.lua`,
+This check exists to answer a different question: after running `install/unix.lua -i`,
 can an unrelated CMake project find CEPO through `CEPO_CMAKE` and link
 `cepo::cepo`?
 
@@ -410,7 +410,7 @@ nowhere else.
 Run it after installing or reinstalling:
 
 ```sh
-lua install.lua
+lua install/unix.lua -i
 exec $SHELL
 
 # In a new shell
@@ -799,7 +799,7 @@ item 的约束
 | 运行器 | 目录 | 用途 | 接入 CEPO 的方式 |
 |---|---|---|---|
 | `quick_test.lua` | `quick_test/` | 写代码过程中的临时验证 | 对仓库根目录 `add_subdirectory` |
-| `dependency_test.lua` | `dependency_test/` | 验证 `install.lua` 安装结果可用 | `include("$ENV{CEPO_CMAKE}")` |
+| `dependency_test.lua` | `dependency_test/` | 验证 `install/unix.lua -i` 安装结果可用 | `include("$ENV{CEPO_CMAKE}")` |
 
 ### `quick_test` —— 写完代码立即验证
 
@@ -812,7 +812,7 @@ item 的约束
 
 ### `dependency_test` —— 验证安装后能否正确找到依赖
 
-这个检查回答的是另一个问题：执行 `install.lua` 之后，一个无关的 CMake 工程
+这个检查回答的是另一个问题：执行 `install/unix.lua -i` 之后，一个无关的 CMake 工程
 能否通过 `CEPO_CMAKE` 找到 CEPO 并链接 `cepo::cepo`？
 
 它刻意**不**对仓库使用 `add_subdirectory`，而是使用下游项目会写的同样两行：
@@ -829,7 +829,7 @@ target_link_libraries(dependency_test PRIVATE cepo::cepo)
 在安装或重装之后运行它：
 
 ```sh
-lua install.lua
+lua install/unix.lua -i
 exec $SHELL
 
 # 在新 shell 中
