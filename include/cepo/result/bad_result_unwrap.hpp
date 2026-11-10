@@ -8,25 +8,24 @@
 
 CEPO_NAMESPACE_START;
 
-class bad_result_unwrap : public std::exception
+enum class bad_result_unwrap_reason_type : unsigned char
 {
-public:
-	enum class reason_type
-	{
-		is_ok,
-		is_error,
-		is_empty
-	};
-	
+	unwrap_when_empty,
+	unwrap_value_when_error,
+	unwrap_error_when_ok
+};
+
+class bad_result_unwrap : public std::exception
+{	
 private:
-	reason_type r;
+	bad_result_unwrap_reason_type r;
 
 public:
-	bad_result_unwrap(reason_type reason) noexcept;
+	bad_result_unwrap(bad_result_unwrap_reason_type reason) noexcept;
 	bad_result_unwrap(const bad_result_unwrap&) noexcept = default;
 	bad_result_unwrap& operator=(const bad_result_unwrap&) noexcept = default;
 	const char* what() const noexcept override;
-	reason_type reason() const noexcept;
+	bad_result_unwrap_reason_type reason() const noexcept;
 	~bad_result_unwrap() noexcept = default;
 
 	bad_result_unwrap() = delete;

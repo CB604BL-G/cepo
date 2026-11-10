@@ -3,7 +3,7 @@
 
 CEPO_NAMESPACE_START;
 
-bad_result_unwrap::bad_result_unwrap(bad_result_unwrap::reason_type reason) noexcept:
+bad_result_unwrap::bad_result_unwrap(bad_result_unwrap_reason_type reason) noexcept:
 	r(reason)
 {}
 
@@ -11,20 +11,20 @@ const char* bad_result_unwrap::what() const noexcept
 {
 	switch (r)
 	{
-	case reason_type::is_ok:
+	case bad_result_unwrap_reason_type::unwrap_error_when_ok:
 		return "cepo::bad_result_unwrap: try to unwrap an error but result is ok";
 
-	case reason_type::is_error:
+	case bad_result_unwrap_reason_type::unwrap_value_when_error:
 		return "cepo::bad_result_unwrap: try to unwrap a value but result is error";
 
-	case reason_type::is_empty:
+	case bad_result_unwrap_reason_type::unwrap_when_empty:
 		return "cepo::bad_result_unwrap: try to unwrap something but result is empty";
 	}
 
 	return "cepo::bad_result_unwrap: an undefined enumeration value was passed into this exception object";
 }
 
-bad_result_unwrap::reason_type bad_result_unwrap::reason() const noexcept
+bad_result_unwrap_reason_type bad_result_unwrap::reason() const noexcept
 {
 	return r;
 }

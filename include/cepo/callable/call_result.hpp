@@ -8,8 +8,6 @@
 #include "cepo/configs/namespace_macro.h"
 #include "cepo/utility/priority_tag.hpp"
 
-CEPO_NAMESPACE_START;
-
 #define BASIC_CALL(F, Args) \
 	CEPO_CALLABLE_CALL_CATEGORY_EXPR_BASIC_CALL(F, Args)
 
@@ -19,42 +17,45 @@ CEPO_NAMESPACE_START;
 #define POINTER_TO_MEMBER_CALL_BY_POINTER(F, Ptr, Args) \
 	CEPO_CALLABLE_CALL_CATEGORY_EXPR_POINTER_TO_MEMBER_CALL_BY_POINTER(F, Ptr, Args)
 
-namespace impl
+CEPO_IMPL_NAMESPACE_START;
+
+//to avoid hard errors
+template<bool callable, typename F, typename... Args>
+struct call_result {};
+
+template<typename F, typename... Args>
+struct call_result<true, F, Args...>
 {
-	//to avoid hard errors
-	template<bool callable, typename F, typename... Args>
-	struct call_result {};
+private:
+	template<typename F_T, typename... Args_T>
+	static auto test(priority_tag<2>) ->
+		decltype(BASIC_CALL(F_T, Args_T));
 
-	template<typename F, typename... Args>
-	struct call_result<true, F, Args...>
-	{
-	private:
-		template<typename F_T, typename... Args_T>
-		static auto test(priority_tag<2>) ->
-			decltype(BASIC_CALL(F_T, Args_T));
+	template<typename F_O, typename Obj, typename... Args_O>
+	static auto test(priority_tag<1>) ->
+		decltype(POINTER_TO_MEMBER_CALL_BY_OBJECT(F_O, Obj, Args_O));
 
-		template<typename F_O, typename Obj, typename... Args_O>
-		static auto test(priority_tag<1>) ->
-			decltype(POINTER_TO_MEMBER_CALL_BY_OBJECT(F_O, Obj, Args_O));
+	template<typename F_P, typename Ptr, typename... Args_P>
+	static auto test(priority_tag<0>) ->
+		decltype(POINTER_TO_MEMBER_CALL_BY_POINTER(F_P, Ptr, Args_P));
 
-		template<typename F_P, typename Ptr, typename... Args_P>
-		static auto test(priority_tag<0>) ->
-			decltype(POINTER_TO_MEMBER_CALL_BY_POINTER(F_P, Ptr, Args_P));
+public:
+	using type = decltype(test<F, Args...>(priority_tag<2>{}));
+};
 
-	public:
-		using type = decltype(test<F, Args...>(priority_tag<2>{}));
-	};
-}
+CEPO_IMPL_NAMESPACE_END;
+
+CEPO_NAMESPACE_START;
 
 template<typename F, typename... Args>
 struct call_result
 	: impl::call_result<is_callable<F, Args...>::value, F, Args...>
 {};
 
+CEPO_NAMESPACE_END;
+
 #undef BASIC_CALL
 #undef POINTER_TO_MEMBER_CALL_BY_OBJECT
 #undef POINTER_TO_MEMBER_CALL_BY_POINTER
-
-CEPO_NAMESPACE_END;
 
 #endif //CEPO_CALLABLE_CALL_RESULT_HPP

@@ -1,4 +1,5 @@
 //Copyright (c) 2026 CB604BL
+//CEPO - C++ Eleven Patches Open-source
 #ifndef CEPO_CONFIGS_NAMESPACE_MACRO_H
 #define CEPO_CONFIGS_NAMESPACE_MACRO_H
 
@@ -9,7 +10,11 @@
 //and has no effect on compilation.
 
 //Do NOT remove the semicolons at the call sites. Do NOT remove this comment.
+
 #define CEPO_NAMESPACE_START namespace cepo {
 #define CEPO_NAMESPACE_END }
+
+#define CEPO_IMPL_NAMESPACE_START namespace cepo { namespace impl {
+#define CEPO_IMPL_NAMESPACE_END } }
 
 #endif //CEPO_CONFIGS_NAMESPACE_MACRO_H
