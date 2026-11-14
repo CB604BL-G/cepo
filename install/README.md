@@ -86,8 +86,9 @@ lua install/unix.lua -h          # usage
 1. Reads the manifest at `$XDG_DATA_HOME/cepo/manifest`, or `$HOME/.local/share/cepo/manifest` when `XDG_DATA_HOME` is unset. If it exists, the script asks whether to reinstall. The previous installation is only removed after step 3, so a mistyped path never costs a working installation.
 2. If no manifest exists but `CEPO_CMAKE` is already set, the script exits with code 4 and asks for the variable to be removed manually, so that a variable it did not create is never overwritten. This holds on both platforms.
 3. Asks for the installation path. The default is `$HOME/.local/share/cepo`. A custom path must be absolute; `~` is not expanded. The directory is created here, before anything is deleted.
-4. On a reinstall, removes the previous installation. On a fresh install, lists any of the four items that already exist in the target directory and asks before deleting them (default `N`); refusing exits with code 1.
-5. Appends a marked block to the startup script selected by `$SHELL`. Only `bash`, `zsh` and `fish` are supported; any other value exits with code 127.
+4. Lists any of the four items that already exist in the target directory and asks before deleting them (default `N`); refusing exits with code 1. This is not limited to a fresh install: a reinstall into a *different* directory would otherwise merge into whatever is already there. Items the installation being replaced already owns are not listed, they are removed in step 5 anyway.
+5. On a reinstall, removes the previous installation, then deletes the conflicting items from step 4. The copy that follows therefore cannot leave stale files behind, so headers deleted or renamed in the repository do not survive in the installation.
+6. Appends a marked block to the startup script selected by `$SHELL`. Only `bash`, `zsh` and `fish` are supported; any other value exits with code 127.
 
    | Shell | File | Line appended |
    |---|---|---|
@@ -103,7 +104,7 @@ lua install/unix.lua -h          # usage
    #[env-for-cepo-end]
    ```
 
-6. Writes the manifest to `$XDG_DATA_HOME/cepo/manifest`, listing the installed files and the modified startup script. The manifest directory is set to mode 700 and the manifest to 600. The manifest is written *before* the startup script is touched, so a failure in step 5 still leaves an installation that `-u` can clean up; in that case the script exits with code 2 and says so.
+7. Writes the manifest to `$XDG_DATA_HOME/cepo/manifest`, listing the installed files and the modified startup script. The manifest directory is set to mode 700 and the manifest to 600. The manifest is written *before* the startup script is touched, so a failure in step 6 still leaves an installation that `-u` can clean up; in that case the script exits with code 2 and says so.
 
 If an existing `#[env-for-cepo-start]` marker has no matching `#[env-for-cepo-end]`, the startup script is left untouched and the script exits with code 2 instead of silently dropping everything after the marker.
 
@@ -226,8 +227,9 @@ lua install/unix.lua -h          # usage
 1. 读取清单 `$XDG_DATA_HOME/cepo/manifest`；未设置 `XDG_DATA_HOME` 时读取 `$HOME/.local/share/cepo/manifest`。若清单存在，询问是否重装。原有安装要等到第 3 步之后才被删除，因此路径输错不会毁掉可用的安装。
 2. 若清单不存在但 `CEPO_CMAKE` 已被设置，脚本以退出码 4 终止，并提示手动删除该变量；它不会覆盖不是由自己创建的变量。两个平台行为一致。
 3. 询问安装路径，默认为 `$HOME/.local/share/cepo`。自定义路径必须是绝对路径，`~` 不会被展开。目录在此处创建，早于任何删除动作。
-4. 重装时删除原有安装；全新安装时若目标目录已存在四个条目中的任意一个，先列出并询问是否删除（默认 `N`），拒绝则以退出码 1 终止。
-5. 依据 `$SHELL` 向对应的启动脚本追加标记块。仅支持 `bash`、`zsh`、`fish`，其它取值以退出码 127 终止。
+4. 若目标目录已存在四个条目中的任意一个，先列出并询问是否删除（默认 `N`），拒绝则以退出码 1 终止。这一步不限于全新安装：重装到**另一个**目录时同样会检查，否则就会与那里原有的内容合并。被替换的安装自身已有的条目不在列表内，它们会在第 5 步被删除。
+5. 重装时先删除原有安装，再删除第 4 步列出的冲突条目。因此随后的复制不会留下陈旧文件，仓库中已删除或改名的头文件不会残留在安装目录。
+6. 依据 `$SHELL` 向对应的启动脚本追加标记块。仅支持 `bash`、`zsh`、`fish`，其它取值以退出码 127 终止。
 
    | Shell | 文件 | 追加内容 |
    |---|---|---|
@@ -243,7 +245,7 @@ lua install/unix.lua -h          # usage
    #[env-for-cepo-end]
    ```
 
-6. 写入清单 `$XDG_DATA_HOME/cepo/manifest`，记录已安装文件与被修改的启动脚本。清单目录权限为 700，清单文件权限为 600。清单在改动启动脚本**之前**写入：即使第 5 步失败，也已存在可供 `-u` 清理的安装记录，脚本会以退出码 2 终止并提示回滚命令。
+7. 写入清单 `$XDG_DATA_HOME/cepo/manifest`，记录已安装文件与被修改的启动脚本。清单目录权限为 700，清单文件权限为 600。清单在改动启动脚本**之前**写入：即使第 6 步失败，也已存在可供 `-u` 清理的安装记录，脚本会以退出码 2 终止并提示回滚命令。
 
 若已存在的 `#[env-for-cepo-start]` 没有配对的 `#[env-for-cepo-end]`，启动脚本不会被改写，脚本以退出码 2 终止，而不是静默丢弃标记之后的所有内容。
 

@@ -139,6 +139,21 @@ function M.parse_manifest(content)
 	return manifest
 end
 
+-- Items of M.ITEMS that already exist inside `dir`, excluding the ones listed
+-- in `owned` (a set of absolute paths, used for items the installation being
+-- replaced already owns). `sep` is the platform separator, `exists` the
+-- platform existence check. Returns the absolute paths of the conflicts.
+function M.existing_items(dir, sep, exists, owned)
+	local found = {}
+	for _, name in ipairs(M.ITEMS) do
+		local target = dir .. sep .. name
+		if not (owned and owned[target]) and exists(target) then
+			found[#found + 1] = target
+		end
+	end
+	return found
+end
+
 function M.required_env(name, exit_code)
 	local value = os.getenv(name)
 	if not (value and value ~= "") then

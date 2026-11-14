@@ -87,7 +87,29 @@ local function install()
 		os.exit(1)
 	end
 
-	-- 3. Drop the previous installation, now that the new location is usable.
+	-- 3. Check the target directory. This is not limited to a fresh install:
+	--    a reinstall into a different directory would otherwise merge into
+	--    whatever is already there. Items owned by the installation being
+	--    replaced are not conflicts, the uninstaller below removes them.
+	local owned = {}
+	if previous then
+		for _, f in ipairs(previous.files) do owned[f] = true end
+	end
+
+	local conflicts = deps.existing_items(install_dir, "/", unix.exists, owned)
+	if #conflicts > 0 then
+		print("The following items already exist in " .. install_dir .. ":")
+		for _, path in ipairs(conflicts) do
+			print("  " .. path)
+		end
+		print("Installing will DELETE these items first.")
+		if not deps.ask("Delete them and continue? [y/N] ", false) then
+			print("Installation cancelled.")
+			os.exit(1)
+		end
+	end
+
+	-- 4. Drop the previous installation, now that the new location is usable.
 	if previous then
 		print("Removing the previous installation:")
 		local problems = unix.remove_installation(manifest_path, previous, print)
@@ -97,34 +119,17 @@ local function install()
 			end
 			print("  continuing anyway")
 		end
-	else
-		-- Fresh install: files left over from a manual copy would otherwise be
-		-- merged into the new tree and stay there forever.
-		local existing = {}
-		for _, name in ipairs(deps.ITEMS) do
-			if unix.exists(install_dir .. "/" .. name) then
-				existing[#existing + 1] = name
-			end
-		end
-		if #existing > 0 then
-			print("The following items already exist in " .. install_dir .. ":")
-			for _, name in ipairs(existing) do
-				print("  " .. name)
-			end
-			print("Installing will DELETE these items first.")
-			if not deps.ask("Delete them and continue? [y/N] ", false) then
-				print("Installation cancelled.")
-				os.exit(1)
-			end
-			for _, name in ipairs(existing) do
-				unix.run_or_die("rm -rf " .. unix.shq(install_dir .. "/" .. name),
-					"remove " .. install_dir .. "/" .. name)
-				print("  deleted " .. install_dir .. "/" .. name)
-			end
-		end
 	end
 
-	-- 4. Copy the files.
+	-- 5. Delete the conflicts, so the copy below cannot leave stale files
+	--    behind: headers deleted or renamed in the repository would otherwise
+	--    survive in the installation forever.
+	for _, path in ipairs(conflicts) do
+		unix.run_or_die("rm -rf " .. unix.shq(path), "remove " .. path)
+		print("  deleted " .. path)
+	end
+
+	-- Copy the files.
 	local installed = {}
 
 	local function install_dir_item(name)
@@ -150,7 +155,7 @@ local function install()
 	install_file_item("lib.cmake")
 	install_file_item("CMakeLists.txt")
 
-	-- 5. Write the manifest BEFORE editing the startup script. If the script
+	-- 6. Write the manifest BEFORE editing the startup script. If the script
 	--    edit fails, the installation is still recorded and `-u` can
 	--    clean it up; the opposite order would leave files on disk that no
 	--    manifest knows about, which makes the next run fail with code 4.
@@ -173,7 +178,7 @@ local function install()
 	unix.run("chmod 700 " .. unix.shq(manifest_dir))
 	unix.run("chmod 600 " .. unix.shq(manifest_path))
 
-	-- 6. Append the marker block to the startup script.
+	-- 7. Append the marker block to the startup script.
 	local ok, err = unix.write_env_block(rc_path, block)
 	if not ok then
 		io.stderr:write("Failed to update " .. rc_path .. ": " .. err .. "\n")

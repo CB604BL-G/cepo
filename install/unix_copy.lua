@@ -44,27 +44,21 @@ else
 end
 
 -- 2. Detect name collisions before touching anything.
-local existing = {}
-for _, name in ipairs(deps.ITEMS) do
-	if unix.exists(install_dir .. "/" .. name) then
-		existing[#existing + 1] = name
-	end
-end
+local conflicts = deps.existing_items(install_dir, "/", unix.exists)
 
-if #existing > 0 then
+if #conflicts > 0 then
 	print("The following items already exist in " .. install_dir .. ":")
-	for _, name in ipairs(existing) do
-		print("  " .. name)
+	for _, path in ipairs(conflicts) do
+		print("  " .. path)
 	end
 	print("Installing will DELETE these items first.")
 	if not deps.ask("Delete them and continue? [y/N] ", false) then
 		print("Installation cancelled.")
 		os.exit(1)
 	end
-	for _, name in ipairs(existing) do
-		unix.run_or_die("rm -rf " .. unix.shq(install_dir .. "/" .. name),
-			"remove " .. install_dir .. "/" .. name)
-		print("  deleted " .. install_dir .. "/" .. name)
+	for _, path in ipairs(conflicts) do
+		unix.run_or_die("rm -rf " .. unix.shq(path), "remove " .. path)
+		print("  deleted " .. path)
 	end
 end
 
