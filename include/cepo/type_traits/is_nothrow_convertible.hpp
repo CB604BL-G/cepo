@@ -39,11 +39,13 @@ public:
 	static constexpr bool value = decltype(test<From, To>(1))::value;
 };
 
+#if not defined(__cpp_inline_variables)
 template<typename From, typename To, bool is_void>
 constexpr bool is_nothrow_convertible<From, To, is_void>::value;
 
 template<typename From, typename To>
 constexpr bool is_nothrow_convertible<From, To, false>::value;
+#endif //not defined(__cpp_inline_variables)
 
 CEPO_IMPL_NAMESPACE_END;
 
@@ -55,8 +57,10 @@ struct is_nothrow_convertible
 	static constexpr bool value = impl::is_nothrow_convertible<From, To>::value;
 };
 
+#if not defined(__cpp_inline_variables)
 template<typename From, typename To>
 constexpr bool is_nothrow_convertible<From, To>::value;
+#endif //not defined(__cpp_inline_variables)
 
 CEPO_NAMESPACE_END;
 

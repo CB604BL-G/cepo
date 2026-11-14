@@ -13,8 +13,10 @@ struct always_false
 	static constexpr bool value = false;
 };
 
+#if not defined(__cpp_inline_variables)
 template<typename... Ts>
 constexpr bool always_false<Ts...>::value;
+#endif //not defined(__cpp_inline_variables)
 
 CEPO_NAMESPACE_END;
 

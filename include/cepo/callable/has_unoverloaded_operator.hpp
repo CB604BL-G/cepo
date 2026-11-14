@@ -26,8 +26,10 @@ public:
 	static constexpr bool value = decltype(test<T>(1))::value;
 };
 
+#if not defined(__cpp_inline_variables)
 template<typename T>
 constexpr bool has_unoverloaded_operator<T>::value;
+#endif //not defined(__cpp_inline_variables)
 
 CEPO_IMPL_NAMESPACE_END;
 

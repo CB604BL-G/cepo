@@ -12,6 +12,10 @@
 #include <type_traits>
 
 //Not considering noexcept compatibility for C++17 for now.
+
+//For types with top-level cv-qualifiers or top-level reference
+//qualifiers, you need to manually remove them before using the
+//type as a template argument.
 CEPO_NAMESPACE_START;
 
 template<typename... Ts>
@@ -478,6 +482,7 @@ struct callable_traits<impl::is_with_a_unique_operator, F>
 {};
 
 /*The following are all out-of-class definitions*/
+#if not defined(__cpp_inline_variables)
 /*For base function type*/
 template<typename Ret, typename... Args>
 constexpr bool callable_traits<Ret(Args...)>::is_c_style_variadic_function;
@@ -653,6 +658,7 @@ template<typename T, typename Ret, typename... Args>
 constexpr bool callable_traits<Ret(T::*)(Args..., ...) volatile &&>::is_c_style_variadic_function;
 template<typename T, typename Ret, typename... Args>
 constexpr bool callable_traits<Ret(T::*)(Args..., ...) const volatile &&>::is_c_style_variadic_function;
+#endif //not defined(__cpp_inline_variables)
 
 CEPO_NAMESPACE_END;
 

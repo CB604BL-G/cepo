@@ -24,6 +24,7 @@ private:
 		using type = Head;
 	};
 
+	//Used to prevent excessive instantiation.
 	template<std::size_t index, bool valid = (index < sizeof...(Args))>
 	struct get_type_at_helper
 	{
@@ -42,10 +43,8 @@ public:
 	template<std::size_t index>
 	struct at
 	{
-		static_assert(
-			sizeof...(Args) != 0,
-			"cepo::arg_tuple::get_type_at: There is no parameter to get");
-
+		//The at interface drops probing capability.
+		//TODO: Add a try_at interface that supports probing capability.
 		static_assert(
 			index < sizeof...(Args),
 			"cepo::arg_tuple::get_type_at: Out of range");
@@ -54,8 +53,10 @@ public:
 	};
 };
 
+#if not defined(__cpp_inline_variables)
 template<typename... Args>
 constexpr std::size_t arg_tuple<Args...>::size;
+#endif //not defined(__cpp_inline_variables)
 
 CEPO_NAMESPACE_END;
 

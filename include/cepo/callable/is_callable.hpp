@@ -68,8 +68,7 @@ private:
 	template<typename...>
 	static std::false_type test(...);
 
-#if defined(__cpp_noexcept_function_type)
-
+	#if defined(__cpp_noexcept_function_type)
 	template<typename F_O, typename Obj, typename... Args_O>
 	static auto test(priority_tag<1>) ->
 		std::integral_constant<bool, noexcept(POINTER_TO_MEMBER_CALL_BY_OBJECT(F_O, Obj, Args_O))>;
@@ -78,18 +77,19 @@ private:
 	template<typename F_P, typename Ptr, typename... Args_P>
 	static auto test(priority_tag<0>) ->
 		std::integral_constant<bool, noexcept(POINTER_TO_MEMBER_CALL_BY_POINTER(F_P, Ptr, Args_P))>;
-
-#endif
+	#endif //defined(__cpp_noexcept_function_type)
 
 public:
 	static constexpr bool value = decltype(test<F, Args...>(priority_tag<2>{}))::value;
 };
 
+#if not defined(__cpp_inline_variables)
 template<typename F, typename... Args>
 constexpr bool is_callable<F, Args...>::value;
 
 template<typename F, typename... Args>
 constexpr bool is_nothrow_callable<F, Args...>::value;
+#endif //not defined(__cpp_inline_variables)
 
 #undef BASIC_CALL
 #undef POINTER_TO_MEMBER_CALL_BY_OBJECT
