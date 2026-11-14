@@ -25,11 +25,14 @@ Patches for C++11, and more than just patches<br>
 
 ### Installation
 
-The installation scripts live in [`install/`](install/README.md): `unix.lua` (`-i` install, `-u` uninstall) and `unix_copy.lua` on Unix, `windows.lua` and `windows_copy.lua` on Windows. [`install/README.md`](install/README.md) documents the prompts, the manifest and rollback behaviour, and the exit codes of every script.
+The installation scripts are located in [`install/`](install/README.md).
+`unix.lua` and `windows.lua` copy the headers, the sources, the CMake entry
+points and `LICENSE` into a specified directory. The interaction and the exit
+codes are documented in [`install/README.md`](install/README.md).
 
 ### Usage from CMake
 
-With either method installed, a downstream project includes `lib.cmake` through `CEPO_CMAKE`:
+A downstream project includes `lib.cmake` through `CEPO_CMAKE`:
 
 ```cmake
 cmake_minimum_required(VERSION 3.20)
@@ -78,11 +81,13 @@ item generator, public header generator) in
 
 ### 安装
 
-安装脚本位于 [`install/`](install/README.md)：Unix 下为 `unix.lua`（`-i` 安装、`-u` 卸载）与 `unix_copy.lua`，Windows 下为 `windows.lua` 与 `windows_copy.lua`。交互流程、清单与回滚行为、各脚本的退出码见 [`install/README.md`](install/README.md)。
+安装脚本位于 [`install/`](install/README.md)。`unix.lua` 与 `windows.lua` 将头
+文件、源文件、CMake 入口与 `LICENSE` 复制到指定目录。交互流程与退出码见
+[`install/README.md`](install/README.md)。
 
 ### 在 CMake 中使用
 
-无论采用哪种方式安装，下游项目都通过 `CEPO_CMAKE` 接入 `lib.cmake`：
+下游项目通过 `CEPO_CMAKE` 接入 `lib.cmake`：
 
 ```cmake
 cmake_minimum_required(VERSION 3.20)

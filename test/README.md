@@ -1,4 +1,19 @@
-# Test Workflow
+<h1 align="center">CEPO test workflow</h1>
+
+<p align="center">
+Test layout, runners and conventions for CEPO<br>
+CEPO 的测试布局、运行器与约定
+</p>
+
+<p align="center">
+  <a href="#english">English</a> · <a href="#简体中文">简体中文</a>
+</p>
+
+---
+
+<a id="english"></a>
+
+## English
 
 This document describes the test workflow for the `cepo` project: how test
 items are laid out on disk, how to generate new ones, how to run them, and
@@ -17,7 +32,7 @@ The workflow assumes:
 
 ---
 
-## 1. Directory Layout
+### 1. Directory Layout
 
 ```
 
@@ -67,7 +82,7 @@ The workflow assumes:
 
 ---
 
-## 2. Building `libcepo.a`
+### 2. Building `libcepo.a`
 
 The shared static library is built by `script/test.lua` **once** per run, before
 any item is compiled, using `test/CMakeLists.txt`:
@@ -107,7 +122,7 @@ add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/.." cepo_build)
 
 ---
 
-## 3. Item Layout
+### 3. Item Layout
 
 Each item lives in test/units/<unit>/<item>/ and must contain:
 
@@ -154,7 +169,7 @@ Key conventions:
 
 ---
 
-## 4. `metadata.txt`
+### 4. `metadata.txt`
 
 metadata.txt is optional. If present, it must follow a strict format:
 
@@ -182,7 +197,7 @@ timeout=5000
 
 ---
 
-## 5. Result Rules
+### 5. Result Rules
 
 For each item, script/test.lua first builds it, then applies:
 
@@ -207,7 +222,7 @@ prints [PASS] ... or [FAIL] ... (reason).
 
 ---
 
-## 6. Running Tests
+### 6. Running Tests
 
 Always run from the project root.
 
@@ -287,7 +302,7 @@ Failed items:
 
 ---
 
-## 7. Managing Items
+### 7. Managing Items
 
 Item directories under `test/units/` belong to two scripts and to nothing
 else:
@@ -303,7 +318,7 @@ an item is more than a folder, it carries a generated `CMakeLists.txt` whose
 include and link paths depend on the depth of the layout, and a unit without
 items is not a valid state.
 
-### Creating items
+#### Creating items
 
 ```sh
 lua script/make_test_item.lua <unit>.<item> [<unit>.<item> ...]
@@ -334,7 +349,7 @@ For each item, the generator creates:
 · metadata.txt is not generated; add it manually when you need
   expect_compile_error=true or a custom timeout.
 
-### Removing items
+#### Removing items
 
 ```sh
 lua script/remove_test_item.lua <unit>.<item> [<unit>.<item> ...]
@@ -353,7 +368,7 @@ is not a valid state: `script/test.lua` would simply find nothing to run in it.
 The script is silent about anything it did not touch: if a unit still has
 other items, it stays.
 
-### Examples
+#### Examples
 
 ```sh
 lua script/make_test_item.lua result.construction
@@ -365,7 +380,7 @@ lua script/remove_test_item.lua result.construction result.unwrap   # last one: 
 
 ---
 
-## 8. Notes and Gotchas
+### 8. Notes and Gotchas
 
 Incremental builds
 
@@ -414,7 +429,7 @@ Item constraints
 
 ---
 
-## 9. Standalone Checks
+### 9. Standalone Checks
 
 The checks under `test/` all build CEPO from the working tree. That answers
 one question - does the code compile and behave correctly - but says nothing
@@ -424,9 +439,9 @@ this section cover the missing questions.
 | Runner | Directory | Purpose | CEPO is consumed via |
 |---|---|---|---|
 | `script/quick_test.lua` | `test/quick_test/` | Ad-hoc check while editing | `add_subdirectory` of the repository root |
-| `script/dependency_test.lua` | `test/dependency_test/` | Verify an installation produced by `install/unix.lua -i` is usable | `include("$ENV{CEPO_CMAKE}")` |
+| `script/dependency_test.lua` | `test/dependency_test/` | Verify an installation produced by `install/unix.lua` is usable | `include("$ENV{CEPO_CMAKE}")` |
 
-### `quick_test` — checking code right after writing it
+#### `quick_test` — checking code right after writing it
 
 `test/quick_test/main.cpp` is a scratch file. The intent is to paste a snippet,
 run `lua script/quick_test.lua`, and get an answer immediately, without going through
@@ -437,9 +452,9 @@ run `lua script/quick_test.lua`, and get an answer immediately, without going th
 Use it while developing. Because it is a scratch file, its content is expected
 to change frequently and is not a permanent test.
 
-### `dependency_test` — checking that an installation resolves correctly
+#### `dependency_test` — checking that an installation resolves correctly
 
-This check exists to answer a different question: after running `install/unix.lua -i`,
+This check exists to answer a different question: after running `install/unix.lua`,
 can an unrelated CMake project find CEPO through `CEPO_CMAKE` and link
 `cepo::cepo`?
 
@@ -457,15 +472,18 @@ environment variable itself. A broken `lib.cmake`, a missing header, or a
 `CEPO_CMAKE` that still points at an old directory all show up here and
 nowhere else.
 
-Run it after installing or reinstalling:
+Run it after installing or reinstalling, in a shell where `CEPO_CMAKE` points at
+the copy:
 
 ```sh
-lua install/unix.lua -i
-exec $SHELL
+lua install/unix.lua
+export CEPO_CMAKE="$HOME/.local/share/cepo/lib.cmake"
 
-# In a new shell
 lua script/dependency_test.lua
 ```
+
+The installer only copies; setting the variable is up to you, see
+[`../install/README.md`](../install/README.md).
 
 The runner checks `CEPO_CMAKE` before doing anything else, because a missing or
 invalid value would otherwise surface as an unrelated CMake configure error:
@@ -494,7 +512,7 @@ The build directory is `<directory>/.build/` and is not committed.
 
 <a id="简体中文"></a>
 
-# 测试流程
+## 简体中文
 
 本文档描述 `cepo` 项目的测试流程：测试项在磁盘上如何组织、如何生成新的
 测试项、如何运行，以及需要遵守的约定。
@@ -511,7 +529,7 @@ The build directory is `<directory>/.build/` and is not committed.
 
 ---
 
-## 1. 目录结构
+### 1. 目录结构
 
 ```
 <项目根目录>/
@@ -556,7 +574,7 @@ The build directory is `<directory>/.build/` and is not committed.
 
 ---
 
-## 2. 构建 `libcepo.a`
+### 2. 构建 `libcepo.a`
 
 `script/test.lua` 在编译任何 item 之前，通过 `test/CMakeLists.txt` **一次性**构建
 共享静态库：
@@ -591,7 +609,7 @@ add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/.." cepo_build)
 
 ---
 
-## 3. item 的构成
+### 3. item 的构成
 
 每个 item 位于 `test/units/<unit>/<item>/`，包含以下文件：
 
@@ -636,7 +654,7 @@ target_link_libraries(<item> PRIVATE
 
 ---
 
-## 4. `metadata.txt`
+### 4. `metadata.txt`
 
 `metadata.txt` 可选。若存在，必须遵循严格格式：
 
@@ -664,7 +682,7 @@ timeout=5000
 
 ---
 
-## 5. 结果判定规则
+### 5. 结果判定规则
 
 对每个 item，`script/test.lua` 先构建，再按以下规则判定：
 
@@ -688,7 +706,7 @@ timeout=5000
 
 ---
 
-## 6. 运行测试
+### 6. 运行测试
 
 始终在项目根目录执行。
 
@@ -768,7 +786,7 @@ Failed items:
 
 ---
 
-## 7. 管理 item
+### 7. 管理 item
 
 `test/units/` 下的 item 目录只属于两个脚本，不属于任何其它工具：
 
@@ -782,7 +800,7 @@ item、`rm`、文件管理器——行为未定义：item 不只是一个文件�
 `CMakeLists.txt`，其中的头文件与链接路径取决于目录深度；而一个不含 item 的
 unit 也不是合法状态。
 
-### 创建 item
+#### 创建 item
 
 ```sh
 lua script/make_test_item.lua <unit>.<item> [<unit>.<item> ...]
@@ -813,7 +831,7 @@ lua script/make_test_item.lua <unit>.<item> [<unit>.<item> ...]
 - 不生成 `metadata.txt`；需要 `expect_compile_error=true` 或自定义超时时
   手动添加。
 
-### 删除 item
+#### 删除 item
 
 ```sh
 lua script/remove_test_item.lua <unit>.<item> [<unit>.<item> ...]
@@ -838,7 +856,7 @@ lua script/make_test_item.lua result.construction result.unwrap
 
 ---
 
-## 8. 注意事项
+### 8. 注意事项
 
 增量构建
 
@@ -882,7 +900,7 @@ item 的约束
 
 ---
 
-## 9. 独立检查
+### 9. 独立检查
 
 `test/` 下的检查全部从工作区源码构建 CEPO。它们能回答一个问题——代码是否
 编译、行为是否正确——但对“使用已安装 CEPO 的项目能否找到它”没有任何说明。
@@ -891,9 +909,9 @@ item 的约束
 | 运行器 | 目录 | 用途 | 接入 CEPO 的方式 |
 |---|---|---|---|
 | `script/quick_test.lua` | `test/quick_test/` | 写代码过程中的临时验证 | 对仓库根目录 `add_subdirectory` |
-| `script/dependency_test.lua` | `test/dependency_test/` | 验证 `install/unix.lua -i` 安装结果可用 | `include("$ENV{CEPO_CMAKE}")` |
+| `script/dependency_test.lua` | `test/dependency_test/` | 验证 `install/unix.lua` 安装结果可用 | `include("$ENV{CEPO_CMAKE}")` |
 
-### `quick_test` —— 写完代码立即验证
+#### `quick_test` —— 写完代码立即验证
 
 `test/quick_test/main.cpp` 是一个草稿文件。它的用途是贴一段代码，执行
 `lua script/quick_test.lua`，立刻得到结果，不必经过 `script/make_test_item.lua`、metadata
@@ -902,9 +920,9 @@ item 的约束
 
 开发过程中使用它。作为草稿文件，它的内容会频繁变动，不作为长期测试。
 
-### `dependency_test` —— 验证安装后能否正确找到依赖
+#### `dependency_test` —— 验证安装后能否正确找到依赖
 
-这个检查回答的是另一个问题：执行 `install/unix.lua -i` 之后，一个无关的 CMake 工程
+这个检查回答的是另一个问题：执行 `install/unix.lua` 之后，一个无关的 CMake 工程
 能否通过 `CEPO_CMAKE` 找到 CEPO 并链接 `cepo::cepo`？
 
 它刻意**不**对仓库使用 `add_subdirectory`，而是使用下游项目会写的同样两行：
@@ -918,13 +936,12 @@ target_link_libraries(dependency_test PRIVATE cepo::cepo)
 `include/`、`src/`——同时也对变量本身敏感。`lib.cmake` 损坏、头文件缺失、
 `CEPO_CMAKE` 仍指向旧目录，这些问题只会在这里暴露，其它检查发现不了。
 
-在安装或重装之后运行它：
+在安装或重装之后，于一个 `CEPO_CMAKE` 指向该副本的 shell 中运行它：
 
 ```sh
-lua install/unix.lua -i
-exec $SHELL
+lua install/unix.lua
+export CEPO_CMAKE="$HOME/.local/share/cepo/lib.cmake"
 
-# 在新 shell 中
 lua script/dependency_test.lua
 ```
 

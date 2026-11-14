@@ -12,9 +12,9 @@
 --
 -- This test consumes cepo the way a downstream project would: through
 -- `include("$ENV{CEPO_CMAKE}")` and the `cepo::cepo` alias target. It therefore
--- requires CEPO_CMAKE to point at lib.cmake, which install/unix.lua -i and
--- install/windows.lua -i set, and which unix_copy.lua / windows_copy.lua leave
--- to the user.
+-- requires CEPO_CMAKE to point at a lib.cmake. install/unix.lua and
+-- install/windows.lua copy one into place and print the statements that set the
+-- variable, see install/README.md.
 --
 -- Exit codes:
 --   0  success

@@ -15,41 +15,50 @@ CEPO 的安装脚本
 
 ## English
 
-The scripts live under `install/`. Shared helpers are in `install/dependencies.lua`; nothing has to be installed to run them, Lua 5.4 is enough.
+`install/unix.lua` and `install/windows.lua` copy the library into a directory
+given by the caller. Shared code is in `install/dependencies.lua`; running the
+scripts requires Lua 5.4.
 
-```text
-install/
-├── dependencies.lua    shared helpers, loaded by the four scripts below
-├── unix.lua            -i install, -u uninstall
-├── unix_copy.lua       plain copy
-├── windows.lua         -i install, -u uninstall
-└── windows_copy.lua    plain copy
-```
-
-Run an installation script from the repository root, so that `./include`, `./src`, `./lib.cmake` and `./CMakeLists.txt` are visible. Otherwise the script exits with code 2 and says what is missing. Uninstallation (`-u`) works from any directory.
-
-Both methods install the same files: `include/`, `src/`, `lib.cmake` and `CMakeLists.txt`.
-
-| | Script | Shell config | Uninstall |
-|---|---|---|---|
-| A | `install/unix_copy.lua`, `install/windows_copy.lua` | not modified | manual |
-| B | `install/unix.lua`, `install/windows.lua` | `CEPO_CMAKE` appended | `-u` |
-
-### A. `unix_copy.lua` / `windows_copy.lua`
-
-Copies the files into a target directory. No shell configuration is read or written, and no environment variable is set. There is no corresponding uninstall script.
+They are executed from the repository root and verify that `include/`, `src/`,
+`lib.cmake`, `CMakeLists.txt` and `LICENSE` are present. If one is missing, the
+script exits with code 2 and names it.
 
 ```sh
-lua install/unix_copy.lua       # Unix
-lua install\windows_copy.lua    # Windows
+lua install/unix.lua
+lua install\windows.lua
 ```
 
-The script prompts twice:
+### Installed items
 
-1. Installation path. The default is `$HOME/.local/share/cepo` on Unix and `%LOCALAPPDATA%\cepo` on Windows. Answer `y` or press Enter to accept it, or `n` to enter an absolute path.
-2. If any of the four items already exists in the target directory, it is listed and the script asks for confirmation before deleting it and copying the new one. The default is `N`.
+| Item | Content |
+|---|---|
+| `include/` | public headers |
+| `src/` | sources of `libcepo.a` |
+| `lib.cmake` | file referenced by `CEPO_CMAKE` |
+| `CMakeLists.txt` | top-level build file |
+| `LICENSE` | MIT license text |
 
-`CEPO_CMAKE` is not set, so it must be provided where needed:
+### Interaction
+
+The script requests two inputs.
+
+1. **Installation path.** The default is `$HOME/.local/share/cepo`, or
+   `%LOCALAPPDATA%\cepo` on Windows. An empty reply or `y` accepts the default;
+   `n` requests an absolute path. Relative paths and paths beginning with `~`
+   are rejected, and the script terminates with exit code 1.
+2. **Existing items.** If any of the items above is present in the target
+   directory, all such items are listed and deletion requires confirmation. The
+   default reply is `N`; refusal terminates with exit code 1 and leaves the
+   target directory unchanged. The check runs on every installation, including a
+   reinstallation into a different directory.
+
+Copying is the final operation, so a refusal at either prompt leaves the target
+directory unchanged.
+
+### CEPO_CMAKE
+
+`CEPO_CMAKE` contains the absolute path of the installed `lib.cmake`. The script
+prints the corresponding statements and does not apply them.
 
 ```sh
 # bash, zsh
@@ -61,94 +70,39 @@ set -gx CEPO_CMAKE $HOME/.local/share/cepo/lib.cmake
 
 ```powershell
 # PowerShell
-[Environment]::SetEnvironmentVariable("CEPO_CMAKE", "$env:LOCALAPPDATA\cepo\lib.cmake", "User")
+$env:CEPO_CMAKE = "$env:LOCALAPPDATA\cepo\lib.cmake"
 ```
 
-To uninstall, remove the directory, and remove the variable from your shell configuration if you set it there:
+Persistence across sessions requires adding the statement to the shell
+configuration.
+
+### Uninstallation
+
+Delete the installation directory:
 
 ```sh
 rm -rf "$HOME/.local/share/cepo"
 ```
 
-### B. `unix.lua` / `windows.lua`
-
-Copies the files, appends `export CEPO_CMAKE=...` or `set -gx CEPO_CMAKE ...` to the startup script of the current shell, and records every change in a manifest so that `-u` can revert it.
-
-```sh
-lua install/unix.lua -i          # Unix
-lua install\windows.lua -i       # Windows
-
-lua install/unix.lua -h          # usage
-```
-
-`-i` performs the following steps:
-
-1. Reads the manifest at `$XDG_DATA_HOME/cepo/manifest`, or `$HOME/.local/share/cepo/manifest` when `XDG_DATA_HOME` is unset. If it exists, the script asks whether to reinstall. The previous installation is only removed after step 3, so a mistyped path never costs a working installation.
-2. If no manifest exists but `CEPO_CMAKE` is already set, the script exits with code 4 and asks for the variable to be removed manually, so that a variable it did not create is never overwritten. This holds on both platforms.
-3. Asks for the installation path. The default is `$HOME/.local/share/cepo`. A custom path must be absolute; `~` is not expanded. The directory is created here, before anything is deleted.
-4. Lists any of the four items that already exist in the target directory and asks before deleting them (default `N`); refusing exits with code 1. This is not limited to a fresh install: a reinstall into a *different* directory would otherwise merge into whatever is already there. Items the installation being replaced already owns are not listed, they are removed in step 5 anyway.
-5. On a reinstall, removes the previous installation, then deletes the conflicting items from step 4. The copy that follows therefore cannot leave stale files behind, so headers deleted or renamed in the repository do not survive in the installation.
-6. Appends a marked block to the startup script selected by `$SHELL`. Only `bash`, `zsh` and `fish` are supported; any other value exits with code 127.
-
-   | Shell | File | Line appended |
-   |---|---|---|
-   | bash | `~/.bashrc` | `export CEPO_CMAKE='<dir>/lib.cmake'` |
-   | zsh | `~/.zshrc` | `export CEPO_CMAKE='<dir>/lib.cmake'` |
-   | fish | `~/.config/fish/config.fish` | `set -gx CEPO_CMAKE '<dir>/lib.cmake'` |
-
-   The block is delimited as follows. Existing blocks are removed before a new one is written, so repeated installations do not accumulate.
-
-   ```sh
-   #[env-for-cepo-start]
-   export CEPO_CMAKE='/home/user/.local/share/cepo/lib.cmake'
-   #[env-for-cepo-end]
-   ```
-
-7. Writes the manifest to `$XDG_DATA_HOME/cepo/manifest`, listing the installed files and the modified startup script. The manifest directory is set to mode 700 and the manifest to 600. The manifest is written *before* the startup script is touched, so a failure in step 6 still leaves an installation that `-u` can clean up; in that case the script exits with code 2 and says so.
-
-If an existing `#[env-for-cepo-start]` marker has no matching `#[env-for-cepo-end]`, the startup script is left untouched and the script exits with code 2 instead of silently dropping everything after the marker.
-
-The variable is read from the startup script at shell startup, so an existing shell does not see it until a new one is started:
-
-```sh
-exec $SHELL
-```
-
-`unix.lua -u` / `windows.lua -u` read the manifest and, in order, removes the marked block from the startup script, deletes the installed files, deletes the manifest, and removes the directories if they are empty. If the startup script cannot be reverted, the installed files and the manifest are kept so that the uninstall can be retried once the script is fixed; the script then exits with code 2.
-
-```sh
-lua install/unix.lua -u          # Unix
-lua install\windows.lua -u       # Windows
-```
-
-After that, `CEPO_CMAKE` is still present in the current shell: a new shell would inherit the variable from the current process, while the line that used to override it has been removed. `exec $SHELL` therefore does not clear it, and the variable has to be unset explicitly:
-
-```sh
-# bash, zsh
-unset CEPO_CMAKE
-
-# fish
-set -e CEPO_CMAKE
-```
+If `CEPO_CMAKE` was added to the shell configuration, that line is removed
+separately.
 
 ### Exit codes
 
-`unix.lua` and `windows.lua` behave the same; `windows.lua` reads `%LOCALAPPDATA%` where `unix.lua` reads `$HOME`.
+| Code | Condition |
+|---|---|
+| 0 | successful installation |
+| 1 | invalid path, or deletion not confirmed |
+| 2 | `$HOME` / `%LOCALAPPDATA%` unset, repository root incomplete, or a copy failed |
 
-| Script | Code | Meaning |
-|---|---|---|
-| `unix_copy.lua`, `windows_copy.lua` | 0 | success |
-| | 1 | invalid path, or cancelled by the user |
-| | 2 | `$HOME` / `%LOCALAPPDATA%` unset, the repository root is incomplete, or a copy failed |
-| `unix.lua -i`, `windows.lua -i` | 0 | success |
-| | 1 | invalid path, cancelled by the user, or an unknown argument |
-| | 2 | a command failed, or the files, the manifest, the startup script or the environment variable could not be written |
-| | 3 | reinstall cancelled by the user |
-| | 4 | `CEPO_CMAKE` is set but no manifest exists |
-| | 127 | `$HOME` unset, or unsupported shell |
-| `unix.lua -u`, `windows.lua -u` | 0 | success, or no installation found |
-| | 1 | unknown argument |
-| | 2 | `$HOME` / `%LOCALAPPDATA%` unset, the startup script or the environment variable could not be reverted, or a file could not be removed |
+### Installations produced by earlier versions
+
+Versions prior to this one accepted `-i` and `-u` and recorded the installation
+in a manifest at `$XDG_DATA_HOME/cepo/manifest`, with an `export CEPO_CMAKE=...`
+block delimited by `#[env-for-cepo-start]` and `#[env-for-cepo-end]` in the
+startup script. An installation created by such a version is removed manually:
+delete the delimited block from the startup script, delete the installation
+directory, delete the manifest if present, and set `CEPO_CMAKE` where required.
 
 ---
 
@@ -156,41 +110,44 @@ set -e CEPO_CMAKE
 
 ## 简体中文
 
-脚本位于 `install/` 下，公共部分在 `install/dependencies.lua`。运行它们不需要额外安装任何东西，有 Lua 5.4 即可。
+`install/unix.lua` 与 `install/windows.lua` 将库复制到调用者指定的目录。共用代码
+位于 `install/dependencies.lua`；运行脚本需要 Lua 5.4。
 
-```text
-install/
-├── dependencies.lua    公共部分，由下面四个脚本加载
-├── unix.lua            -i 安装，-u 卸载
-├── unix_copy.lua       仅复制
-├── windows.lua         -i 安装，-u 卸载
-└── windows_copy.lua    仅复制
-```
-
-请在仓库根目录运行安装脚本，以保证 `./include`、`./src`、`./lib.cmake`、`./CMakeLists.txt` 可见；否则脚本以退出码 2 终止并指出缺少哪一项。卸载（`-u`）可在任意目录运行。
-
-两种方式安装的文件相同：`include/`、`src/`、`lib.cmake`、`CMakeLists.txt`。
-
-| | 脚本 | Shell 配置 | 卸载 |
-|---|---|---|---|
-| A | `install/unix_copy.lua`、`install/windows_copy.lua` | 不修改 | 手动 |
-| B | `install/unix.lua`、`install/windows.lua` | 追加 `CEPO_CMAKE` | `-u` |
-
-### A. `unix_copy.lua` / `windows_copy.lua`
-
-将文件复制到目标目录。不读取也不修改任何 shell 配置，不设置环境变量，因此没有对应的卸载脚本。
+脚本在仓库根目录执行，并检查 `include/`、`src/`、`lib.cmake`、`CMakeLists.txt`、
+`LICENSE` 是否存在。缺失时以退出码 2 终止并指明缺失项。
 
 ```sh
-lua install/unix_copy.lua       # Unix
-lua install\windows_copy.lua    # Windows
+lua install/unix.lua
+lua install\windows.lua
 ```
 
-脚本会进行两次询问：
+### 安装内容
 
-1. 安装路径。默认值为 Unix 下的 `$HOME/.local/share/cepo` 与 Windows 下的 `%LOCALAPPDATA%\cepo`。输入 `y` 或直接回车采用默认值，输入 `n` 则手动输入一个绝对路径。
-2. 若目标目录中已存在上述四个条目中的任意一个，脚本会先列出，再询问是否删除并覆盖。此项默认值为 `N`。
+| 条目 | 内容 |
+|---|---|
+| `include/` | 公开头文件 |
+| `src/` | `libcepo.a` 的源文件 |
+| `lib.cmake` | `CEPO_CMAKE` 所引用的文件 |
+| `CMakeLists.txt` | 顶层构建文件 |
+| `LICENSE` | MIT 许可证文本 |
 
-脚本不设置 `CEPO_CMAKE`，需要时自行提供：
+### 交互流程
+
+脚本请求两项输入。
+
+1. **安装路径。** 默认为 `$HOME/.local/share/cepo`，Windows 上为
+   `%LOCALAPPDATA%\cepo`。输入空行或 `y` 接受默认值；输入 `n` 后需提供绝对
+   路径。相对路径与以 `~` 开头的路径视为非法，脚本以退出码 1 终止。
+2. **已存在的条目。** 目标目录中存在上述任一条目时，脚本列出全部冲突项并要求
+   确认删除。默认回复为 `N`，拒绝时以退出码 1 终止，目标目录保持不变。该检查在
+   每次安装时执行，包括重装到另一个目录的情形。
+
+复制为最后一个操作，因此任一处拒绝确认时，目标目录保持不变。
+
+### CEPO_CMAKE
+
+`CEPO_CMAKE` 的内容为已安装 `lib.cmake` 的绝对路径。脚本打印相应语句，但不代为
+写入。
 
 ```sh
 # bash、zsh
@@ -202,91 +159,32 @@ set -gx CEPO_CMAKE $HOME/.local/share/cepo/lib.cmake
 
 ```powershell
 # PowerShell
-[Environment]::SetEnvironmentVariable("CEPO_CMAKE", "$env:LOCALAPPDATA\cepo\lib.cmake", "User")
+$env:CEPO_CMAKE = "$env:LOCALAPPDATA\cepo\lib.cmake"
 ```
 
-卸载时删除该目录；若曾在 shell 配置中自行添加该变量，一并删除对应行：
+若需跨会话生效，将上述语句加入 shell 配置文件。
+
+### 卸载
+
+删除安装目录：
 
 ```sh
 rm -rf "$HOME/.local/share/cepo"
 ```
 
-### B. `unix.lua` / `windows.lua`
-
-复制文件的同时，向当前 shell 的启动脚本追加 `export CEPO_CMAKE=...` 或 `set -gx CEPO_CMAKE ...`，并把所有改动记录到清单中，供 `-u` 回滚。
-
-```sh
-lua install/unix.lua -i          # Unix
-lua install\windows.lua -i       # Windows
-
-lua install/unix.lua -h          # usage
-```
-
-`-i` 的执行步骤如下：
-
-1. 读取清单 `$XDG_DATA_HOME/cepo/manifest`；未设置 `XDG_DATA_HOME` 时读取 `$HOME/.local/share/cepo/manifest`。若清单存在，询问是否重装。原有安装要等到第 3 步之后才被删除，因此路径输错不会毁掉可用的安装。
-2. 若清单不存在但 `CEPO_CMAKE` 已被设置，脚本以退出码 4 终止，并提示手动删除该变量；它不会覆盖不是由自己创建的变量。两个平台行为一致。
-3. 询问安装路径，默认为 `$HOME/.local/share/cepo`。自定义路径必须是绝对路径，`~` 不会被展开。目录在此处创建，早于任何删除动作。
-4. 若目标目录已存在四个条目中的任意一个，先列出并询问是否删除（默认 `N`），拒绝则以退出码 1 终止。这一步不限于全新安装：重装到**另一个**目录时同样会检查，否则就会与那里原有的内容合并。被替换的安装自身已有的条目不在列表内，它们会在第 5 步被删除。
-5. 重装时先删除原有安装，再删除第 4 步列出的冲突条目。因此随后的复制不会留下陈旧文件，仓库中已删除或改名的头文件不会残留在安装目录。
-6. 依据 `$SHELL` 向对应的启动脚本追加标记块。仅支持 `bash`、`zsh`、`fish`，其它取值以退出码 127 终止。
-
-   | Shell | 文件 | 追加内容 |
-   |---|---|---|
-   | bash | `~/.bashrc` | `export CEPO_CMAKE='<dir>/lib.cmake'` |
-   | zsh | `~/.zshrc` | `export CEPO_CMAKE='<dir>/lib.cmake'` |
-   | fish | `~/.config/fish/config.fish` | `set -gx CEPO_CMAKE '<dir>/lib.cmake'` |
-
-   标记块格式如下。写入前会先删除已有标记块，因此重复安装不会累积。
-
-   ```sh
-   #[env-for-cepo-start]
-   export CEPO_CMAKE='/home/user/.local/share/cepo/lib.cmake'
-   #[env-for-cepo-end]
-   ```
-
-7. 写入清单 `$XDG_DATA_HOME/cepo/manifest`，记录已安装文件与被修改的启动脚本。清单目录权限为 700，清单文件权限为 600。清单在改动启动脚本**之前**写入：即使第 6 步失败，也已存在可供 `-u` 清理的安装记录，脚本会以退出码 2 终止并提示回滚命令。
-
-若已存在的 `#[env-for-cepo-start]` 没有配对的 `#[env-for-cepo-end]`，启动脚本不会被改写，脚本以退出码 2 终止，而不是静默丢弃标记之后的所有内容。
-
-该变量在 shell 启动时从启动脚本中读取，因此已打开的 shell 不会立即生效，需要启动新 shell：
-
-```sh
-exec $SHELL
-```
-
-`unix.lua -u` / `windows.lua -u` 读取清单后，依次从启动脚本中删除标记块、删除已安装文件、删除清单，若目录已空则一并删除。若启动脚本无法回滚，则保留已安装文件与清单，以便修好脚本后重新执行卸载；此情况以退出码 2 终止。
-
-```sh
-lua install/unix.lua -u          # Unix
-lua install\windows.lua -u       # Windows
-```
-
-卸载完成后，当前 shell 中仍存在 `CEPO_CMAKE`：新 shell 会从当前进程继承该变量，而原先覆盖它的那一行已被删除，因此 `exec $SHELL` 无法清除它，需要显式删除：
-
-```sh
-# bash、zsh
-unset CEPO_CMAKE
-
-# fish
-set -e CEPO_CMAKE
-```
+若曾将 `CEPO_CMAKE` 写入 shell 配置文件，需另行删除该行。
 
 ### 退出码
 
-`unix.lua` 与 `windows.lua` 行为一致，只是后者用 `%LOCALAPPDATA%` 代替 `$HOME`。
+| 退出码 | 条件 |
+|---|---|
+| 0 | 安装成功 |
+| 1 | 路径非法，或未确认删除 |
+| 2 | 未设置 `$HOME` / `%LOCALAPPDATA%`，仓库根目录不完整，或复制失败 |
 
-| 脚本 | 退出码 | 含义 |
-|---|---|---|
-| `unix_copy.lua`、`windows_copy.lua` | 0 | 成功 |
-| | 1 | 路径非法，或用户取消 |
-| | 2 | 未设置 `$HOME` / `%LOCALAPPDATA%`，仓库根目录不完整，或复制失败 |
-| `unix.lua -i`、`windows.lua -i` | 0 | 成功 |
-| | 1 | 路径非法、用户取消，或参数无法识别 |
-| | 2 | 命令执行失败，或文件、清单、启动脚本、环境变量写入失败 |
-| | 3 | 用户取消重装 |
-| | 4 | `CEPO_CMAKE` 已设置但清单不存在 |
-| | 127 | 未设置 `$HOME`，或不支持的 shell |
-| `unix.lua -u`、`windows.lua -u` | 0 | 成功，或未找到安装 |
-| | 1 | 参数无法识别 |
-| | 2 | 未设置 `$HOME` / `%LOCALAPPDATA%`，启动脚本或环境变量回滚失败，或某个文件无法删除 |
+### 旧版本产生的安装
+
+此前版本的脚本提供 `-i` 与 `-u`，并在 `$XDG_DATA_HOME/cepo/manifest` 记录清单，
+同时向启动脚本写入由 `#[env-for-cepo-start]` 与 `#[env-for-cepo-end]` 界定的
+`export CEPO_CMAKE=...` 块。由该版本产生的安装需手动清理：删除启动脚本中被界定
+的块、删除安装目录、删除可能存在的清单，并在需要的位置设置 `CEPO_CMAKE`。

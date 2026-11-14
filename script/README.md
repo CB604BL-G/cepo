@@ -15,12 +15,12 @@ CEPO 的开发脚本
 
 ## English
 
-Every Lua script of the project lives here. None of them needs anything but
-`lua` 5.4; they drive `cmake` for the parts that have to be compiled.
+The project's Lua scripts are located in this directory. They require Lua 5.4
+and invoke `cmake` for the parts that must be compiled.
 
-The scripts resolve the project root from their own location, so they can be
-started from any working directory. Running them from the repository root is
-still the normal case and keeps the printed paths short:
+Each script derives the project root from its own path, so the working directory
+is not significant. Execution from the repository root yields the shortest paths
+in the output:
 
 ```sh
 lua script/test.lua
@@ -77,8 +77,9 @@ Exit codes: 0 success, 1 build or run failed, 2 unknown argument.
 
 Builds and runs `test/dependency_test/`, which consumes CEPO the way a
 downstream project does: `include("$ENV{CEPO_CMAKE}")` and the `cepo::cepo`
-alias. It therefore requires `CEPO_CMAKE` to point at a `lib.cmake`, which
-`install/unix.lua -i` or `install/windows.lua -i` sets for you.
+alias. It therefore requires `CEPO_CMAKE` to point at a `lib.cmake`; the
+statements that set it are printed by the installer, see
+[`../install/README.md`](../install/README.md).
 
 ```sh
 lua script/dependency_test.lua
@@ -89,9 +90,10 @@ The flags are the same as for `quick_test.lua`. Exit codes: 0 success,
 
 ### `make_test_item.lua` — create items
 
-Creates `test/units/<unit>/<item>/` with a generated `CMakeLists.txt` and an
-empty `test.cpp`. The include and link paths inside the generated CMakeLists
-depend on the layout, which is why items are not created by hand.
+Creates `test/units/<unit>/<item>/` containing a generated `CMakeLists.txt` and
+an empty `test.cpp`. The include and link paths in that file depend on the depth
+of the item directory, which is why the file is generated rather than written by
+hand.
 
 ```sh
 lua script/make_test_item.lua result.construction
@@ -104,10 +106,10 @@ exist yet; all arguments are validated before anything is created. Exit codes:
 
 ### `remove_test_item.lua` — delete items
 
-The counterpart of `make_test_item.lua`, with the same argument syntax and the
-opposite expectation: the directories must exist. All arguments are validated
-first, so a typo in a list deletes nothing. A unit whose last item is removed
-is deleted too, because an empty unit is not a valid state.
+Accepts the same arguments as `make_test_item.lua`; the directories must exist.
+All arguments are validated before any deletion, so an invalid argument in a
+list results in no deletion at all. When the last item of a unit is removed, the
+unit directory is removed as well, since an empty unit cannot be scanned.
 
 ```sh
 lua script/remove_test_item.lua result.construction
@@ -115,9 +117,9 @@ lua script/remove_test_item.lua result.construction
 
 Exit codes: 0 success, 1 invalid argument or a missing target.
 
-Item directories are created and deleted only by these two scripts; doing it
-by any other means is undefined. See
-[`../test/README.md`](../test/README.md) section 7.
+Item directories are created and deleted exclusively by these two scripts. Any
+other means is unsupported. See [`../test/README.md`](../test/README.md)
+section 7.
 
 ### `make_header.lua` — create a header
 
@@ -165,11 +167,11 @@ could not be copied.
 
 ## 简体中文
 
-项目所有的 Lua 脚本都在这里。除 `lua` 5.4 之外不需要任何东西；需要编译的部分
-由脚本调用 `cmake` 完成。
+项目的 Lua 脚本位于此目录。运行需要 Lua 5.4；需要编译的部分由脚本调用
+`cmake` 完成。
 
-脚本根据自身位置推导项目根目录，因此可以在任意工作目录下启动。从仓库根目录
-运行仍是最常见的方式，而且打印出来的路径最短：
+脚本根据自身路径推算项目根目录，因此工作目录不影响执行。在仓库根目录执行时，
+输出中的路径最短：
 
 ```sh
 lua script/test.lua
@@ -224,8 +226,8 @@ lua script/quick_test.lua -- --flag   # 把参数传给程序
 
 构建并运行 `test/dependency_test/`，它以下游项目的方式消费 CEPO：
 `include("$ENV{CEPO_CMAKE}")` 加 `cepo::cepo` 别名。因此要求 `CEPO_CMAKE` 指向
-某个 `lib.cmake`，这个变量由 `install/unix.lua -i` 或 `install/windows.lua -i`
-设置。
+某个 `lib.cmake`。安装脚本不设置该变量，见
+[`../install/README.md`](../install/README.md)。
 
 ```sh
 lua script/dependency_test.lua
@@ -237,8 +239,8 @@ lua script/dependency_test.lua
 ### `make_test_item.lua` —— 创建测试项
 
 创建 `test/units/<unit>/<item>/`，内含生成的 `CMakeLists.txt` 与空的
-`test.cpp`。生成的 CMakeLists 里的头文件与链接路径取决于目录层级，这正是
-测试项不由手工创建的原因。
+`test.cpp`。该文件中的头文件与链接路径取决于测试项目录的层级，因此由脚本生成，
+而非手工编写。
 
 ```sh
 lua script/make_test_item.lua result.construction
@@ -250,9 +252,9 @@ lua script/make_test_item.lua result.construction result.unwrap
 
 ### `remove_test_item.lua` —— 删除测试项
 
-`make_test_item.lua` 的对应物，参数语法相同而预期相反：目标目录必须存在。
-所有参数先校验，因此一次传入多个 item 时只要有一个写错就什么也不删。若某个
-unit 的最后一个 item 被删除，该 unit 目录也会被删除，因为空 unit 不是合法状态。
+参数语法与 `make_test_item.lua` 相同，但目标目录必须存在。所有参数在删除前完成
+校验，因此一次传入多个 item 时，只要有一项非法就不会发生任何删除。某 unit 的
+最后一个 item 被删除时，该 unit 目录一并删除，因为空 unit 无法被扫描。
 
 ```sh
 lua script/remove_test_item.lua result.construction
@@ -260,7 +262,7 @@ lua script/remove_test_item.lua result.construction
 
 退出码：0 成功，1 参数非法或目标不存在。
 
-测试项目录只由这两个脚本创建和删除；其它任何方式行为未定义。见
+测试项目录仅由这两个脚本创建和删除，其它方式不受支持。见
 [`../test/README.md`](../test/README.md) 第 7 节。
 
 ### `make_header.lua` —— 创建头文件
