@@ -3,7 +3,7 @@
 #ifndef CEPO_CALLABLE_TRAITS_HPP
 #define CEPO_CALLABLE_TRAITS_HPP
 
-#include "cepo/callable/arg_tuple.hpp"
+#include "cepo/callable/arg_list.hpp"
 #include "cepo/callable/has_unoverloaded_operator.hpp"
 #include "cepo/callable/t_tags.hpp"
 #include "cepo/configs/namespace_macro.h"
@@ -43,7 +43,7 @@ struct callable_traits<Ret(Args...)>
 	static constexpr bool is_lvalue_ref_qualified = false;
 	static constexpr bool is_rvalue_ref_qualified = false;
 	
-	using fixed_arg_types = arg_tuple<Args...>;
+	using fixed_arg_types = arg_list<Args...>;
 
 	static constexpr std::size_t fixed_arg_count = fixed_arg_types::size;
 
