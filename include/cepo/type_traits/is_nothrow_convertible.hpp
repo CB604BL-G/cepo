@@ -4,16 +4,17 @@
 #define CEPO_TYPE_TRAITS_IS_NOTHROW_CONVERTIBLE_HPP
 
 #include "cepo/configs/namespace_macro.h"
+#include "cepo/type_traits/bool_constant.hpp"
 #include <type_traits>
 #include <utility>
 
 CEPO_IMPL_NAMESPACE_START;
 
 template<typename From, typename To,
-	bool is_void = std::is_void<To>::value or std::is_void<From>::value>
+	bool is_void = std::is_void<From>::value or std::is_void<To>::value>
 struct is_nothrow_convertible
 {
-	static constexpr bool value = std::is_void<To>::value and std::is_void<From>::value;
+	static constexpr bool value = std::is_void<From>::value and std::is_void<To>::value;
 };
 
 template<typename From, typename To>
@@ -28,8 +29,7 @@ private:
 		decltype(
 			//The static_cast here is only meant to reproduce the well-formedness check for a form like "To foo() {}".
 			static_cast<ToT(*)()>(nullptr),
-			std::integral_constant<
-				bool,
+			bool_constant<
 				noexcept(test_aux<ToT>(std::declval<FromT>()))>{});
 
 	template<typename...>

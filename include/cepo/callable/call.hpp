@@ -4,7 +4,7 @@
 #define CEPO_CALLABLE_CALL_HPP
 
 #include "cepo/callable/call_category.hpp"
-#include "cepo/callable/is_callable.hpp"
+#include "cepo/callable/is_nothrow_callable.hpp"
 #include "cepo/configs/namespace_macro.h"
 #include <utility>
 

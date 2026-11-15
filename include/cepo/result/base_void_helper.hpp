@@ -5,6 +5,7 @@
 
 #include "cepo/callable/call_result.hpp"
 #include "cepo/callable/is_callable.hpp"
+#include "cepo/callable/is_nothrow_callable.hpp"
 #include "cepo/configs/namespace_macro.h"
 #include "cepo/macros/nodiscard.hpp"
 #include "cepo/result/result_base.hpp"
