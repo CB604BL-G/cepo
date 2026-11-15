@@ -66,7 +66,7 @@ private:
 	//Do NOT remove this friendship, even though the value side does not
 	//exist when T is void. cepo::result<void, E> is built from a
 	//result_error_slot<E>, and cepo::impl::result_base_void has to read
-	//that slot's is_empty / exception_ptr / area / destroy_self(). Those
+	//that slot's is_successful / area / destroy_self(). Those
 	//members are inherited privately from impl::result_slot_base, so
 	//this declaration is what makes the private base cast legal. Without
 	//it every error path of result<void, E> fails to compile.

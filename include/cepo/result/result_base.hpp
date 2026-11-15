@@ -19,6 +19,8 @@ private:
 	{
 		T value;
 		E error;
+		std::exception_ptr exception_ptr;
+		
 		area_type() noexcept {}
 		~area_type() noexcept {}
 	};
@@ -27,13 +29,10 @@ private:
 	{
 		ok,
 		error,
-		empty		//For T/E construction failed and result's moved-form
+		exceptional
 	};
 
 	area_type area;
-	//Exceptions are only used as auxiliary information,
-	//but in fact, they are still three states
-	std::exception_ptr exception_ptr;
 	state_type state;
 
 	void destroy_self() noexcept
@@ -42,9 +41,9 @@ private:
 			area.value.~T();
 		else if (state == state_type::error)
 			area.error.~E();
-
-		state = state_type::empty;
-		exception_ptr = nullptr;
+		else if (state == state_type::exceptional)
+			area.exception_ptr.~decltype(area.exception_ptr)();
+		//Keep current state
 	}
 
 protected:
@@ -57,13 +56,12 @@ protected:
 public:
 	result_base(result_base&& other) noexcept:
 		area(),
-		exception_ptr(nullptr),
-		state(state_type::empty)
+		state(state_type::exceptional)		//Default state
 	{
-		if (other.is_empty())
+		if (other.is_exceptional())
 		{
-			exception_ptr = other.exception_ptr;
-			other.exception_ptr = nullptr;
+			//Sharing exception instead of moving
+			new (&area.exception_ptr) std::exception_ptr(other.area.exception_ptr);
 			return;
 		}
 
@@ -82,21 +80,17 @@ public:
 		}
 		catch (...)
 		{
-			exception_ptr = std::current_exception();
+			new (&area.exception_ptr) std::exception_ptr(std::current_exception());
 		}
-
-		other.destroy_self();
 	}
 
 	result_base(result_value_slot<T>&& value) noexcept:
 		area(),
-		exception_ptr(nullptr),
-		state(state_type::empty)
+		state(state_type::exceptional)
 	{
-		if (value.is_empty)
+		if (not value.is_successful)
 		{
-			exception_ptr = value.exception_ptr;
-			value.exception_ptr = nullptr;
+			new (&area.exception_ptr) std::exception_ptr(value.area.exception_ptr);
 			return;
 		}
 
@@ -107,21 +101,17 @@ public:
 		}
 		catch (...)
 		{
-			exception_ptr = std::current_exception();
+			new (&area.exception_ptr) std::exception_ptr(std::current_exception());
 		}
-
-		value.destroy_self();
 	}
 
 	result_base(result_error_slot<E>&& error) noexcept:
 		area(),
-		exception_ptr(nullptr),
-		state(state_type::empty)
+		state(state_type::exceptional)
 	{
-		if (error.is_empty)
+		if (not error.is_successful)
 		{
-			exception_ptr = error.exception_ptr;
-			error.exception_ptr = nullptr;
+			new (&area.exception_ptr) std::exception_ptr(error.area.exception_ptr);
 			return;
 		}
 
@@ -132,10 +122,8 @@ public:
 		}
 		catch (...)
 		{
-			exception_ptr = std::current_exception();
+			new (&area.exception_ptr) std::exception_ptr(std::current_exception());
 		}
-
-		error.destroy_self();
 	}
 
 	result_base& operator=(result_base&& other) noexcept
@@ -143,11 +131,10 @@ public:
 		if (this == &other) return *this;
 
 		destroy_self();
-
-		if (other.is_empty())
+		state = state_type::exceptional;
+		if (other.is_exceptional())
 		{
-			exception_ptr = other.exception_ptr;
-			other.exception_ptr = nullptr;
+			new (&area.exception_ptr) std::exception_ptr(other.area.exception_ptr);
 			return *this;
 		}
 
@@ -166,10 +153,8 @@ public:
 		}
 		catch (...)
 		{
-			exception_ptr = std::current_exception();
+			new (&area.exception_ptr) std::exception_ptr(std::current_exception());
 		}
-
-		other.destroy_self();
 
 		return *this;
 	}
@@ -181,35 +166,40 @@ public:
 
 	bool is_ok() const noexcept { return state == state_type::ok; }
 	bool is_error() const noexcept { return state == state_type::error; }
-	bool is_empty() const noexcept { return state == state_type::empty; }
-	bool has_exception() const noexcept { return exception_ptr != nullptr; }
+	bool is_exceptional() const noexcept { return state == state_type::exceptional; }
 
-	std::exception_ptr get_exception() const noexcept { return exception_ptr; }
+	//Noexcept, but get in non-exceptional state then rethrow it is UB
+	std::exception_ptr get_exception() const noexcept
+	{	
+		return is_exceptional()
+			? area.exception_ptr
+			: std::exception_ptr{nullptr};
+	}
 
 	T& unwrap_value()
 	{
 		if (is_error())
-			throw bad_result_unwrap(bad_result_unwrap_reason_type::unwrap_value_when_error);
-		else if (is_empty())
-			throw bad_result_unwrap(bad_result_unwrap_reason_type::unwrap_when_empty);
+			throw bad_result_unwrap(bad_result_unwrap_reason::unwrap_value_in_error_state);
+		else if (is_exceptional())
+			throw bad_result_unwrap(bad_result_unwrap_reason::unwrap_in_exceptional_state);
 		return area.value;
 	}
 	
 	const T& unwrap_value() const
 	{
 		if (is_error())
-			throw bad_result_unwrap(bad_result_unwrap_reason_type::unwrap_value_when_error);
-		else if (is_empty())
-			throw bad_result_unwrap(bad_result_unwrap_reason_type::unwrap_when_empty);
+			throw bad_result_unwrap(bad_result_unwrap_reason::unwrap_value_in_error_state);
+		else if (is_exceptional())
+			throw bad_result_unwrap(bad_result_unwrap_reason::unwrap_in_exceptional_state);
 		return area.value;
 	}
 
 	const E& unwrap_error() const
 	{
 		if (is_ok())
-			throw bad_result_unwrap(bad_result_unwrap_reason_type::unwrap_error_when_ok);
-		else if (is_empty())
-			throw bad_result_unwrap(bad_result_unwrap_reason_type::unwrap_when_empty);
+			throw bad_result_unwrap(bad_result_unwrap_reason::unwrap_error_in_ok_state);
+		else if (is_exceptional())
+			throw bad_result_unwrap(bad_result_unwrap_reason::unwrap_in_exceptional_state);
 		return area.error;
 	}
 	
@@ -226,6 +216,8 @@ private:
 	{
 		//No need to save void type anymore
 		E error;
+		std::exception_ptr exception_ptr;
+		
 		area_type() noexcept {};
 		~area_type() noexcept {};
 	};
@@ -234,11 +226,10 @@ private:
 	{
 		ok,
 		error,
-		empty
+		exceptional
 	};
 
 	area_type area;
-	std::exception_ptr exception_ptr;
 	state_type state;
 
 	void destroy_self() noexcept
@@ -246,8 +237,9 @@ private:
 		//No need to destruct void
 		if (state == state_type::error)
 			area.error.~E();
-		state = state_type::empty;
-		exception_ptr = nullptr;
+		else if (state == state_type::exceptional)
+			area.exception_ptr.~decltype(area.exception_ptr)();
+		//Keep current state
 	}
 
 protected:
@@ -256,19 +248,16 @@ protected:
 public:
 	result_base_void(result_base_void&& other) noexcept:
 		area(),
-		exception_ptr(nullptr),
-		state(state_type::empty)
+		state(state_type::exceptional)
 	{
-		if (other.is_empty())
+		if (other.is_exceptional())
 		{
-			exception_ptr = other.exception_ptr;
-			other.exception_ptr = nullptr;
+			new (&area.exception_ptr) std::exception_ptr(other.area.exception_ptr);
 			return;
 		}
 		else if (other.is_ok())
 		{
 			state = state_type::ok;
-			other.state = state_type::empty;
 			return;
 		}
 
@@ -279,28 +268,23 @@ public:
 		}
 		catch (...)
 		{
-			exception_ptr = std::current_exception();
+			new (&area.exception_ptr) std::exception_ptr(std::current_exception());
 		}
-
-		other.destroy_self();
 	}
 
 	//There is NO data member in result_value_type when std::is_void<Void>::value is true
 	result_base_void(result_value_slot<Void>&&) noexcept:
 		area(),
-		exception_ptr(nullptr),
 		state(state_type::ok)
 	{}
 
 	result_base_void(result_error_slot<E>&& error) noexcept:
 		area(),
-		exception_ptr(nullptr),
-		state(state_type::empty)
+		state(state_type::exceptional)
 	{
-		if (error.is_empty)
+		if (not error.is_successful)
 		{
-			exception_ptr = error.exception_ptr;
-			error.exception_ptr = nullptr;
+			new (&area.exception_ptr) std::exception_ptr(error.area.exception_ptr);
 			return;
 		}
 
@@ -311,10 +295,8 @@ public:
 		}
 		catch (...)
 		{
-			exception_ptr = std::current_exception();
+			new (&area.exception_ptr) std::exception_ptr(std::current_exception());
 		}
-
-		error.destroy_self();
 	}
 
 	result_base_void& operator=(result_base_void&& other) noexcept
@@ -322,17 +304,15 @@ public:
 		if (this == &other) return *this;
 
 		destroy_self();
-
-		if (other.is_empty())
+		state = state_type::exceptional;
+		if (other.is_exceptional())
 		{
-			exception_ptr = other.exception_ptr;
-			other.exception_ptr = nullptr;
+			new (&area.exception_ptr) std::exception_ptr(other.area.exception_ptr);
 			return *this;
 		}
 		else if (other.is_ok())
 		{
 			state = state_type::ok;
-			other.state = state_type::empty;
 			return *this;
 		}
 
@@ -343,10 +323,9 @@ public:
 		}
 		catch (...)
 		{
-			exception_ptr = std::current_exception();
+			new (&area.exception_ptr) std::exception_ptr(std::current_exception());
 		}
 
-		other.destroy_self();
 		return *this;
 	}
 
@@ -357,17 +336,21 @@ public:
 
 	bool is_ok() const noexcept { return state == state_type::ok; }
 	bool is_error() const noexcept { return state == state_type::error; }
-	bool is_empty() const noexcept { return state == state_type::empty; }
-	bool has_exception() const noexcept { return exception_ptr != nullptr; }
+	bool is_exceptional() const noexcept { return state == state_type::exceptional; }
 
-	std::exception_ptr get_exception() const noexcept { return exception_ptr; }
+	std::exception_ptr get_exception() const noexcept
+	{
+		return is_exceptional()
+			? area.exception_ptr
+			: std::exception_ptr{nullptr};
+	}
 
 	const E& unwrap_error() const
 	{
 		if (is_ok())
-			throw bad_result_unwrap(bad_result_unwrap_reason_type::unwrap_error_when_ok);
-		else if (is_empty())
-			throw bad_result_unwrap(bad_result_unwrap_reason_type::unwrap_when_empty);
+			throw bad_result_unwrap(bad_result_unwrap_reason::unwrap_error_in_ok_state);
+		else if (is_exceptional())
+			throw bad_result_unwrap(bad_result_unwrap_reason::unwrap_in_exceptional_state);
 		return area.error;
 	}
 	

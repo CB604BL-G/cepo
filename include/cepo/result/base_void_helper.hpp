@@ -41,11 +41,10 @@ public:
 
 	using base_type::is_ok;
 	using base_type::is_error;
-	using base_type::is_empty;
-	using base_type::has_exception;
-
-	using base_type::get_exception;
+	using base_type::is_exceptional;
+	
 	using base_type::unwrap_error;
+	using base_type::get_exception;
 
 	template<typename F>
 	CEPO_NODISCARD

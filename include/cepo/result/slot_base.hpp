@@ -26,22 +26,24 @@ private:
 	union area_type
 	{
 		T slot;
+		std::exception_ptr exception_ptr;
+		
 		area_type() noexcept {}
 		~area_type() noexcept {}
 	};
 
 	area_type area;
-	std::exception_ptr exception_ptr;
-	bool is_empty;
+	bool is_successful;
 
 	void destroy_self() noexcept
 	{
-		if (not is_empty)
-		{
+		if (is_successful)
 			area.slot.~T();
-			is_empty = true;
+		else
+		{
+			area.exception_ptr.~decltype(area.exception_ptr)();
 		}
-		exception_ptr = nullptr;
+		//Keep current state
 	}
 
 public:
@@ -53,44 +55,42 @@ public:
 		>::type = 0>
 	explicit result_slot_base(Args&&... args) noexcept:
 		area(),
-		exception_ptr(nullptr),
-		is_empty(true)
+		is_successful(false)
 	{
 		try
 		{
 			new (&area.slot) T(std::forward<Args>(args)...);
-			is_empty = false;
+			is_successful = true;
 		}
 		catch (...)
 		{
-			exception_ptr = std::current_exception();
+			new (&area.exception_ptr) std::exception_ptr(std::current_exception());
 		}
 	}
 
 	result_slot_base(result_slot_base&& other) noexcept:
 		area(),
-		exception_ptr(nullptr),
-		is_empty(true)
+		is_successful(false)
 	{
-		if (other.is_empty)
+		if (not other.is_successful)
 		{
-			exception_ptr = other.exception_ptr;
-			other.exception_ptr = nullptr;
+			//Sharing exception instead of moving
+			new (&area.exception_ptr) std::exception_ptr(other.area.exception_ptr);
 			return;
 		}
 		
 		try
 		{
 			new (&area.slot) T(std::move(other.area.slot));
-			is_empty = false;
+			is_successful = true;
 		}
 		catch (...)
 		{
-			exception_ptr = std::current_exception();
+			new (&area.exception_ptr) std::exception_ptr(std::current_exception());
 		}
 
-		//Intentionally not putting it in the try-catch
-		other.destroy_self();
+		//The original object remains unchanged,
+		//and the stored value becomes valid but unspecified
 	}
 
 	result_slot_base& operator=(result_slot_base&& other) noexcept
@@ -98,24 +98,23 @@ public:
 		if (this == &other) return *this;
 
 		destroy_self();
-		if (other.is_empty)
+		is_successful = false;
+		if (not other.is_successful)
 		{
-			exception_ptr = other.exception_ptr;
-			other.exception_ptr = nullptr;
+			new (&area.exception_ptr) std::exception_ptr(other.area.exception_ptr);
 			return *this;
 		}
 
 		try
 		{
 			new (&area.slot) T(std::move(other.area.slot));
-			is_empty = false;
+			is_successful = true;
 		}
 		catch (...)
 		{
-			exception_ptr = std::current_exception();
+			new (&area.exception_ptr) std::exception_ptr(std::current_exception());
 		}
-
-		other.destroy_self();
+		
 		return *this;
 	}
 

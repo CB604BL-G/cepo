@@ -16,33 +16,43 @@
 
 CEPO_NAMESPACE_START;
 
-//This is a tri-state move-only class. It has three
-//states: ok, error, and empty. However, empty can
-//also represent the moved-from state or a state resulting
-//from a construction exception, so it can be roughly
-//regarded as a four-state class. Nevertheless, since
-//we focus more on value states, we still define it
-//as a tri-state type.
+//This is a tri-state move-only class. During the lifetime of
+//an object it is always in exactly one of three states: ok,
+//error, or exceptional. The exceptional state means that the
+//stored value or error could not be constructed, and that the
+//exception which caused it has been recorded.
 
 //Moreover, the result class is not completely exception-free.
 //It only guarantees that no new exceptions will be thrown
-//along the error-propagation chain, which is why both
-//its constructors and its move assignment operator are
-//noexcept. If you call unwrap_value when the state is
-//empty or error, it will throw an exception rather than
-//silently fail and give you an invalid reference. The
-//same applies when calling unwrap_error. The exception
-//thrown when unwrap fails does not carry the exception
-//that may have occurred during construction; you still
-//need to use has_exception to detect it.
+//along the error-propagation chain, which is why both its
+//constructors and its move assignment operator are noexcept.
+//If you call unwrap_value when the state is exceptional or
+//error, it will throw an exception rather than silently fail
+//and give you an invalid reference. The same applies when
+//calling unwrap_error. The exception thrown when unwrap fails
+//does not carry the exception that may have occurred during
+//construction; use is_exceptional to detect that, and
+//get_exception to rethrow it.
+
+//Moving behaves differently depending on the state, which is
+//something the caller has to keep in mind. Moving an object in
+//the exceptional state propagates the exception: the exception
+//is shared with the new object, no exception is thrown, and the
+//source keeps its state as well, so both objects afterwards
+//refer to the same exception. Moving an object in any other
+//state does not consume the source: it keeps its previous
+//state, but the value or error it stores is left in a valid
+//but unspecified state.
 
 //Note on the slot -> result transfer: it is always a move.
 //Because of this, a T (or E) whose move constructor may throw
 //can never produce an ok (respectively error) result at all:
 //make_result_value / make_result_error already fails at that
-//step, and the result ends up empty with the exception recorded.
-//In other words, "move-constructible" is not enough here; only
-//types that do not throw on move can actually carry a value state.
+//step, and the result ends up exceptional with the exception
+//recorded. In other words, "move-constructible" is not enough
+//here; only types that do not throw on move can actually carry
+//a value state.
+
 template<typename T, typename E>
 class result
 	: private impl::result_base<T, E>
@@ -66,12 +76,11 @@ public:
 
 	using base_type::is_ok;
 	using base_type::is_error;
-	using base_type::is_empty;
-	using base_type::has_exception;
+	using base_type::is_exceptional;
 
-	using base_type::get_exception;
 	using base_type::unwrap_value;
 	using base_type::unwrap_error;
+	using base_type::get_exception;
 
 	template<typename F>
 	CEPO_NODISCARD
@@ -140,11 +149,11 @@ public:
 
 	using base_type::is_ok;
 	using base_type::is_error;
-	using base_type::is_empty;
-	using base_type::has_exception;
+	using base_type::is_exceptional;
 
-	using base_type::get_exception;
 	using base_type::unwrap_error;
+	using base_type::get_exception;
+	
 	using base_type::ok;
 };
 
@@ -171,11 +180,11 @@ public:
 
 	using base_type::is_ok;
 	using base_type::is_error;
-	using base_type::is_empty;
-	using base_type::has_exception;
+	using base_type::is_exceptional;
 
-	using base_type::get_exception;
 	using base_type::unwrap_error;
+	using base_type::get_exception;
+	
 	using base_type::ok;
 };
 
@@ -202,11 +211,11 @@ public:
 
 	using base_type::is_ok;
 	using base_type::is_error;
-	using base_type::is_empty;
-	using base_type::has_exception;
+	using base_type::is_exceptional;
 
-	using base_type::get_exception;
 	using base_type::unwrap_error;
+	using base_type::get_exception;
+	
 	using base_type::ok;
 };
 
@@ -233,11 +242,11 @@ public:
 
 	using base_type::is_ok;
 	using base_type::is_error;
-	using base_type::is_empty;
-	using base_type::has_exception;
+	using base_type::is_exceptional;
 
-	using base_type::get_exception;
 	using base_type::unwrap_error;
+	using base_type::get_exception;
+	
 	using base_type::ok;
 };
 
