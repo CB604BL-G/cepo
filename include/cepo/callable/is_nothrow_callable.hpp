@@ -8,7 +8,7 @@
 #include "cepo/type_traits/bool_constant.hpp"
 #include "cepo/utility/priority_tag.hpp"
 
-CEPO_NAMESPACE_START;
+CEPO_IMPL_NAMESPACE_START;
 
 #define BASIC_CALL(F, Args) \
 	CEPO_CALLABLE_CALL_CATEGORY_EXPR_BASIC_CALL(F, Args)
@@ -19,16 +19,6 @@ CEPO_NAMESPACE_START;
 #define POINTER_TO_MEMBER_CALL_BY_POINTER(F, Ptr, Args) \
 	CEPO_CALLABLE_CALL_CATEGORY_EXPR_POINTER_TO_MEMBER_CALL_BY_POINTER(F, Ptr, Args)
 
-//Detects whether F(Args...) is both callable and noexcept.
-//false does not distinguish "not callable" from "callable but throwing".
-
-//In C++11/14, noexcept is not part of the function type, so the noexcept
-//specification of function references / function pointers / member-function
-//pointers cannot be observed through the type system (only functors and
-//lambdas are reliable). C++17 introduced noexcept function types via
-//__cpp_noexcept_function_type; only then are the member-pointer overloads
-//below compiled and able to participate in overload resolution. On older
-//standards they are omitted.
 template<typename F, typename... Args>
 struct is_nothrow_callable
 {
@@ -55,14 +45,28 @@ public:
 	static constexpr bool value = decltype(test<F, Args...>(priority_tag<2>{}))::value;
 };
 
-#if not defined(__cpp_inline_variables)
-template<typename F, typename... Args>
-constexpr bool is_nothrow_callable<F, Args...>::value;
-#endif //not defined(__cpp_inline_variables)
-
 #undef BASIC_CALL
 #undef POINTER_TO_MEMBER_CALL_BY_OBJECT
 #undef POINTER_TO_MEMBER_CALL_BY_POINTER
+
+CEPO_IMPL_NAMESPACE_END;
+
+CEPO_NAMESPACE_START;
+
+//Detects whether F(Args...) is both callable and noexcept.
+//false does not distinguish "not callable" from "callable but throwing".
+
+//In C++11/14, noexcept is not part of the function type, so the noexcept
+//specification of function references / function pointers / member-function
+//pointers cannot be observed through the type system (only functors and
+//lambdas are reliable). C++17 introduced noexcept function types via
+//__cpp_noexcept_function_type; only then are the member-pointer overloads
+//below compiled and able to participate in overload resolution. On older
+//standards they are omitted.
+template<typename F, typename... Args>
+struct is_nothrow_callable
+	: bool_constant<impl::is_nothrow_callable<F, Args...>::value>
+{};
 
 CEPO_NAMESPACE_END;
 

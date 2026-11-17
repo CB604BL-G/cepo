@@ -46,6 +46,12 @@ private:
 		//Keep current state
 	}
 
+	void destroy_to_useless() noexcept
+	{
+		destroy_self();
+		state = state_type::exceptional;
+	}
+
 protected:
 	inline T& get_value_unchecked() noexcept { return area.value; }
 	inline const T& get_value_unchecked() const noexcept { return area.value; }
@@ -130,8 +136,7 @@ public:
 	{
 		if (this == &other) return *this;
 
-		destroy_self();
-		state = state_type::exceptional;
+		destroy_to_useless();
 		if (other.is_exceptional())
 		{
 			new (&area.exception_ptr) std::exception_ptr(other.area.exception_ptr);
@@ -242,6 +247,12 @@ private:
 		//Keep current state
 	}
 
+	void destroy_to_useless() noexcept
+	{
+		destroy_self();
+		state = state_type::exceptional;
+	}
+
 protected:
 	inline const E& get_error_unchecked() const noexcept { return area.error; }
 	
@@ -303,8 +314,7 @@ public:
 	{
 		if (this == &other) return *this;
 
-		destroy_self();
-		state = state_type::exceptional;
+		destroy_to_useless();
 		if (other.is_exceptional())
 		{
 			new (&area.exception_ptr) std::exception_ptr(other.area.exception_ptr);

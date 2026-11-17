@@ -4,10 +4,11 @@
 #define CEPO_TYPE_TRAITS_IS_BOOL_TESTABLE_HPP
 
 #include "cepo/configs/namespace_macro.h"
+#include "cepo/type_traits/bool_constant.hpp"
 #include <type_traits>
 #include <utility>
 
-CEPO_NAMESPACE_START;
+CEPO_IMPL_NAMESPACE_START;
 
 template<typename T>
 struct is_bool_testable
@@ -39,10 +40,14 @@ public:
 		decltype(not_operable<T>(1))::value;
 };
 
-#if not defined(__cpp_inline_variables)
+CEPO_IMPL_NAMESPACE_END;
+
+CEPO_NAMESPACE_START;
+
 template<typename T>
-constexpr bool is_bool_testable<T>::value;
-#endif //not defined(__cpp_inline_variables)
+struct is_bool_testable
+	: bool_constant<impl::is_bool_testable<T>::value>
+{};
 
 CEPO_NAMESPACE_END;
 

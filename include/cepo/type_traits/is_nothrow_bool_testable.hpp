@@ -8,7 +8,7 @@
 #include <type_traits>
 #include <utility>
 
-CEPO_NAMESPACE_START;
+CEPO_IMPL_NAMESPACE_START;
 
 template<typename T>
 struct is_nothrow_bool_testable
@@ -36,10 +36,14 @@ public:
 		decltype(nothrow_not_operable<T>(1))::value;
 };
 
-#if not defined(__cpp_inline_variables)
+CEPO_IMPL_NAMESPACE_END;
+
+CEPO_NAMESPACE_START;
+
 template<typename T>
-constexpr bool is_nothrow_bool_testable<T>::value;
-#endif //not defined(__cpp_inline_variables)
+struct is_nothrow_bool_testable
+	: bool_constant<impl::is_nothrow_bool_testable<T>::value>
+{};
 
 CEPO_NAMESPACE_END;
 

@@ -46,6 +46,12 @@ private:
 		//Keep current state
 	}
 
+	void destroy_to_useless() noexcept
+	{
+		destroy_self();
+		is_successful = false;
+	}
+
 public:
 	template<
 		typename... Args,
@@ -97,8 +103,7 @@ public:
 	{
 		if (this == &other) return *this;
 
-		destroy_self();
-		is_successful = false;
+		destroy_to_useless();
 		if (not other.is_successful)
 		{
 			new (&area.exception_ptr) std::exception_ptr(other.area.exception_ptr);

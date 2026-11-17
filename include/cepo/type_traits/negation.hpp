@@ -4,13 +4,13 @@
 #define CEPO_TYPE_TRAITS_NEGATION_HPP
 
 #include "cepo/configs/namespace_macro.h"
-#include <type_traits>
+#include "cepo/type_traits/bool_constant.hpp"
 
 CEPO_NAMESPACE_START;
 
 template<typename B>
 struct negation
-	: std::integral_constant<bool, not bool(B::value)>
+	: bool_constant<not bool(B::value)>
 {};
 
 CEPO_NAMESPACE_END;
