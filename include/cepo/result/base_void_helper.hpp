@@ -23,6 +23,13 @@ class result_base_void_helper
 private:
 	using base_type = result_base_void<Void, E>;
 
+protected:
+	bool is_equal_to(const result_base_void_helper& other) const
+		noexcept(noexcept(base_type::is_equal_to(other)))
+	{
+		return base_type::is_equal_to(other);
+	}
+
 public:
 	using result_base_void<Void, E>::result_base_void;
 

@@ -12,6 +12,7 @@
 #include "cepo/result/base_void_helper.hpp"
 #include "cepo/result/result_base.hpp"
 #include "cepo/result/when_error.hpp"
+#include "cepo/type_traits/is_equality_operable.hpp"
 #include <type_traits>
 #include <utility>
 
@@ -54,6 +55,18 @@ CEPO_NAMESPACE_START;
 //here; only types that do not throw on move can actually carry
 //a value state.
 
+//The symmetry of cepo::result's operator== and operator!= depends
+//on whether the operator== and operator!= of T, E, and
+//std::exception_ptr are negations of each other. When the states
+//differ, operator== returns false and operator!= returns true
+//directly, without delegating to any type. When the states match,
+//the comparison is delegated to the corresponding type: T for the
+//ok state, E for the error state, and std::exception_ptr for the
+//exceptional state. Therefore, if the result of T1 == T2 is not
+//the negation of T1 != T2, the same will hold for cepo::result;
+//likewise for E and std::exception_ptr. Here, "symmetry"
+//specifically means that operator== and operator!= should produce
+//negated results.
 template<typename T, typename E>
 class result
 	: private impl::result_base<T, E>
@@ -82,6 +95,17 @@ public:
 	using base_type::unwrap_value;
 	using base_type::unwrap_error;
 	using base_type::get_exception;
+
+	bool is_equal_to(const result& other) const
+		noexcept(noexcept(base_type::is_equal_to(other)))
+	{
+		static_assert(
+			is_equality_operable<const T&>::value and
+			is_equality_operable<const E&>::value,
+			"cepo::result::is_equal_to: The operator== of T and E must exist");
+		
+		return base_type::is_equal_to(other);
+	}
 
 	template<typename F>
 	CEPO_NODISCARD
@@ -155,6 +179,16 @@ public:
 	using base_type::unwrap_error;
 	using base_type::get_exception;
 	
+	bool is_equal_to(const result& other) const
+		noexcept(noexcept(base_type::is_equal_to(other)))
+	{
+		static_assert(
+			is_equality_operable<const E&>::value,
+			"cepo::result::is_equal_to: The operator== of E must exist");
+		
+		return base_type::is_equal_to(other);
+	}
+	
 	using base_type::ok;
 };
 
@@ -185,6 +219,16 @@ public:
 
 	using base_type::unwrap_error;
 	using base_type::get_exception;
+	
+	bool is_equal_to(const result& other) const
+		noexcept(noexcept(base_type::is_equal_to(other)))
+	{
+		static_assert(
+			is_equality_operable<const E&>::value,
+			"cepo::result::is_equal_to: The operator== of E must exist");
+		
+		return base_type::is_equal_to(other);
+	}
 	
 	using base_type::ok;
 };
@@ -217,6 +261,16 @@ public:
 	using base_type::unwrap_error;
 	using base_type::get_exception;
 	
+	bool is_equal_to(const result& other) const
+		noexcept(noexcept(base_type::is_equal_to(other)))
+	{
+		static_assert(
+			is_equality_operable<const E&>::value,
+			"cepo::result::is_equal_to: The operator== of E must exist");
+		
+		return base_type::is_equal_to(other);
+	}
+	
 	using base_type::ok;
 };
 
@@ -247,6 +301,16 @@ public:
 
 	using base_type::unwrap_error;
 	using base_type::get_exception;
+	
+	bool is_equal_to(const result& other) const
+		noexcept(noexcept(base_type::is_equal_to(other)))
+	{
+		static_assert(
+			is_equality_operable<const E&>::value,
+			"cepo::result::is_equal_to: The operator== of E must exist");
+		
+		return base_type::is_equal_to(other);
+	}
 	
 	using base_type::ok;
 };

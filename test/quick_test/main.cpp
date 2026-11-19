@@ -1,23 +1,13 @@
-//#include "cepo/type_traits/is_bool_testable.hpp"
-#include "cepo/type_traits/is_nothrow_oneway_equality_operable_with.hpp"
-#include "cepo/type_traits/is_nothrow_oneway_inequality_operable_with.hpp"
-#include "cepo/type_traits/is_oneway_equality_comparison_operable_with.hpp"
-#include "cepo/type_traits/is_oneway_equality_operable_with.hpp"
-#include "cepo/type_traits/is_oneway_inequality_operable_with.hpp"
+#include "cepo/result.hpp"
+#include "cepo/result/factory.hpp"
 class t
 {
 public:
+	bool operator==(const t&) = delete;// const noexcept { return true; };
 };
-
-bool operator==(t, int) noexcept;
-bool operator==(int, t);
-bool operator!=(t, int) noexcept;
-bool operator!=(int, t);
-
 
 auto main() -> int
 {
-	static_assert(
-		cepo::is_oneway_equality_comparison_operable_with<t, int>::value,
-		"");
+	cepo::result<int, t> r = cepo::make_result_error<t>();
+	r.is_equal_to(r);
 }
