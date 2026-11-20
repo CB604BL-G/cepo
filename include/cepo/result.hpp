@@ -13,6 +13,7 @@
 #include "cepo/result/result_base.hpp"
 #include "cepo/result/when_error.hpp"
 #include "cepo/type_traits/is_equality_operable.hpp"
+#include "cepo/type_traits/is_inequality_operable.hpp"
 #include <type_traits>
 #include <utility>
 
@@ -68,7 +69,7 @@ CEPO_NAMESPACE_START;
 //specifically means that operator== and operator!= should produce
 //negated results.
 template<typename T, typename E>
-class result
+class result final
 	: private impl::result_base<T, E>
 {
 private:
@@ -85,6 +86,9 @@ private:
 
 	using base_type = impl::result_base<T, E>;
 
+	using base_type::is_equal_to;
+	using base_type::is_not_equal_to;
+
 public:
 	using impl::result_base<T, E>::result_base;
 
@@ -96,15 +100,32 @@ public:
 	using base_type::unwrap_error;
 	using base_type::get_exception;
 
-	bool is_equal_to(const result& other) const
-		noexcept(noexcept(base_type::is_equal_to(other)))
+	template<typename Tp, typename Ep>
+	friend auto operator==(const result<Tp, Ep>& lhs, const result<Tp, Ep>& rhs)
+		noexcept(noexcept(lhs.is_equal_to(rhs)))
+		-> typename std::enable_if<
+			std::is_same<Tp, T>::value and
+			std::is_same<Ep, E>::value and
+			is_equality_operable<const Tp&>::value and
+			is_equality_operable<const Ep&>::value,
+			bool
+		>::type
 	{
-		static_assert(
-			is_equality_operable<const T&>::value and
-			is_equality_operable<const E&>::value,
-			"cepo::result::is_equal_to: The operator== of T and E must exist");
-		
-		return base_type::is_equal_to(other);
+		return lhs.is_equal_to(rhs);
+	}
+
+	template<typename Tp, typename Ep>
+	friend auto operator!=(const result<Tp, Ep>& lhs, const result<Tp, Ep>& rhs)
+		noexcept(noexcept(lhs.is_not_equal_to(rhs)))
+		-> typename std::enable_if<
+			std::is_same<Tp, T>::value and
+			std::is_same<Ep, E>::value and
+			is_inequality_operable<const Tp&>::value and
+			is_inequality_operable<const Ep&>::value,
+			bool
+		>::type
+	{
+		return lhs.is_not_equal_to(rhs);
 	}
 
 	template<typename F>
@@ -153,7 +174,7 @@ public:
 };
 
 template<typename E>
-class result<void, E>
+class result<void, E> final
 	: private impl::result_base_void_helper<void, E>
 {
 private:
@@ -169,6 +190,10 @@ private:
 		"cepo::result: E must have nothrow destructor");
 
 	using base_type = impl::result_base_void_helper<void, E>;
+
+	using base_type::is_equal_to;
+	using base_type::is_not_equal_to;
+	
 public:
 	using impl::result_base_void_helper<void, E>::result_base_void_helper;
 
@@ -178,22 +203,38 @@ public:
 
 	using base_type::unwrap_error;
 	using base_type::get_exception;
-	
-	bool is_equal_to(const result& other) const
-		noexcept(noexcept(base_type::is_equal_to(other)))
+
+	template<typename Vp, typename Ep>
+	friend auto operator==(const result<Vp, Ep>& lhs, const result<Vp, Ep>& rhs)
+		noexcept(noexcept(lhs.is_equal_to(rhs)))
+		-> typename std::enable_if<
+			std::is_same<Vp, void>::value and
+			std::is_same<Ep, E>::value and
+			is_equality_operable<const Ep&>::value,
+			bool
+		>::type
 	{
-		static_assert(
-			is_equality_operable<const E&>::value,
-			"cepo::result::is_equal_to: The operator== of E must exist");
-		
-		return base_type::is_equal_to(other);
+		return lhs.is_equal_to(rhs);
 	}
-	
+
+	template<typename Vp, typename Ep>
+	friend auto operator!=(const result<Vp, Ep>& lhs, const result<Vp, Ep>& rhs)
+		noexcept(noexcept(lhs.is_not_equal_to(rhs)))
+		-> typename std::enable_if<
+			std::is_same<Vp, void>::value and
+			std::is_same<Ep, E>::value and
+			is_inequality_operable<const Ep&>::value,
+			bool
+		>::type
+	{
+		return lhs.is_not_equal_to(rhs);
+	}
+
 	using base_type::ok;
 };
 
 template<typename E>
-class result<const void, E>
+class result<const void, E> final
 	: private impl::result_base_void_helper<const void, E>
 {
 private:
@@ -210,6 +251,9 @@ private:
 
 	using base_type = impl::result_base_void_helper<const void, E>;
 
+	using base_type::is_equal_to;
+	using base_type::is_not_equal_to;
+
 public:
 	using impl::result_base_void_helper<const void, E>::result_base_void_helper;
 
@@ -220,21 +264,37 @@ public:
 	using base_type::unwrap_error;
 	using base_type::get_exception;
 	
-	bool is_equal_to(const result& other) const
-		noexcept(noexcept(base_type::is_equal_to(other)))
+	template<typename Vp, typename Ep>
+	friend auto operator==(const result<Vp, Ep>& lhs, const result<Vp, Ep>& rhs)
+		noexcept(noexcept(lhs.is_equal_to(rhs)))
+		-> typename std::enable_if<
+			std::is_same<Vp, const void>::value and
+			std::is_same<Ep, E>::value and
+			is_equality_operable<const Ep&>::value,
+			bool
+		>::type
 	{
-		static_assert(
-			is_equality_operable<const E&>::value,
-			"cepo::result::is_equal_to: The operator== of E must exist");
-		
-		return base_type::is_equal_to(other);
+		return lhs.is_equal_to(rhs);
 	}
 	
+	template<typename Vp, typename Ep>
+	friend auto operator!=(const result<Vp, Ep>& lhs, const result<Vp, Ep>& rhs)
+		noexcept(noexcept(lhs.is_not_equal_to(rhs)))
+		-> typename std::enable_if<
+			std::is_same<Vp, const void>::value and
+			std::is_same<Ep, E>::value and
+			is_inequality_operable<const Ep&>::value,
+			bool
+		>::type
+	{
+		return lhs.is_not_equal_to(rhs);
+	}
+
 	using base_type::ok;
 };
 
 template<typename E>
-class result<volatile void, E>
+class result<volatile void, E> final
 	: private impl::result_base_void_helper<volatile void, E>
 {
 private:
@@ -251,6 +311,9 @@ private:
 
 	using base_type = impl::result_base_void_helper<volatile void, E>;
 
+	using base_type::is_equal_to;
+	using base_type::is_not_equal_to;
+
 public:
 	using impl::result_base_void_helper<volatile void, E>::result_base_void_helper;
 
@@ -261,21 +324,38 @@ public:
 	using base_type::unwrap_error;
 	using base_type::get_exception;
 	
-	bool is_equal_to(const result& other) const
-		noexcept(noexcept(base_type::is_equal_to(other)))
+	template<typename Vp, typename Ep>
+	friend auto operator==(const result<Vp, Ep>& lhs, const result<Vp, Ep>& rhs)
+		noexcept(noexcept(lhs.is_equal_to(rhs)))
+		-> typename std::enable_if<
+			std::is_same<Vp, volatile void>::value and
+			std::is_same<Ep, E>::value and
+			is_equality_operable<const Ep&>::value,
+			bool
+		>::type
 	{
-		static_assert(
-			is_equality_operable<const E&>::value,
-			"cepo::result::is_equal_to: The operator== of E must exist");
-		
-		return base_type::is_equal_to(other);
+		return lhs.is_equal_to(rhs);
 	}
+
+	template<typename Vp, typename Ep>
+	friend auto operator!=(const result<Vp, Ep>& lhs, const result<Vp, Ep>& rhs)
+		noexcept(noexcept(lhs.is_not_equal_to(rhs)))
+		-> typename std::enable_if<
+			std::is_same<Vp, volatile void>::value and
+			std::is_same<Ep, E>::value and
+			is_inequality_operable<const Ep&>::value,
+			bool
+		>::type
+	{
+		return lhs.is_not_equal_to(rhs);
+	}
+
 	
 	using base_type::ok;
 };
 
 template<typename E>
-class result<const volatile void, E>
+class result<const volatile void, E> final
 	: private impl::result_base_void_helper<const volatile void, E>
 {
 private:
@@ -292,6 +372,9 @@ private:
 
 	using base_type = impl::result_base_void_helper<const volatile void, E>;
 
+	using base_type::is_equal_to;
+	using base_type::is_not_equal_to;
+
 public:
 	using impl::result_base_void_helper<const volatile void, E>::result_base_void_helper;
 
@@ -301,17 +384,34 @@ public:
 
 	using base_type::unwrap_error;
 	using base_type::get_exception;
-	
-	bool is_equal_to(const result& other) const
-		noexcept(noexcept(base_type::is_equal_to(other)))
+
+	template<typename Vp, typename Ep>
+	friend auto operator==(const result<Vp, Ep>& lhs, const result<Vp, Ep>& rhs)
+		noexcept(noexcept(lhs.is_equal_to(rhs)))
+		-> typename std::enable_if<
+			std::is_same<Vp, const volatile void>::value and
+			std::is_same<Ep, E>::value and
+			is_equality_operable<const Ep&>::value,
+			bool
+		>::type
 	{
-		static_assert(
-			is_equality_operable<const E&>::value,
-			"cepo::result::is_equal_to: The operator== of E must exist");
-		
-		return base_type::is_equal_to(other);
+		return lhs.is_equal_to(rhs);
 	}
 	
+	template<typename Vp, typename Ep>
+	friend auto operator!=(const result<Vp, Ep>& lhs, const result<Vp, Ep>& rhs)
+		noexcept(noexcept(lhs.is_not_equal_to(rhs)))
+		-> typename std::enable_if<
+			std::is_same<Vp, const volatile void>::value and
+			std::is_same<Ep, E>::value and
+			is_inequality_operable<const Ep&>::value,
+			bool
+		>::type
+	{
+		return lhs.is_not_equal_to(rhs);
+	}
+
+
 	using base_type::ok;
 };
 

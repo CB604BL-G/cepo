@@ -6,10 +6,10 @@
 #include "cepo/configs/namespace_macro.h"
 #include "cepo/result/bad_result_unwrap.hpp"
 #include "cepo/result/slots.hpp"
-#include "cepo/type_traits/is_equality_operable.hpp"
 #include "cepo/type_traits/is_nothrow_equality_operable.hpp"
+#include "cepo/type_traits/is_nothrow_inequality_operable.hpp"
+#include <asm-generic/signal.h>
 #include <exception>
-#include <type_traits>
 #include <utility>
 
 CEPO_IMPL_NAMESPACE_START;
@@ -62,18 +62,12 @@ protected:
 	//const-only
 	inline const E& get_error_unchecked() const noexcept { return area.error; }
 
-	template<typename X = T, typename Y = E>
-	typename std::enable_if<
-		is_equality_operable<const X&>::value and
-		is_equality_operable<const Y&>::value,
-		bool
-	>::type
-	is_equal_to(const result_base& other) const
+	bool is_equal_to(const result_base& other) const
 		noexcept(
 			//T and E are required to be object
 			//so there is no reference to be removed
-			is_nothrow_equality_operable<const X&>::value and
-			is_nothrow_equality_operable<const Y&>::value)
+			is_nothrow_equality_operable<const T&>::value and
+			is_nothrow_equality_operable<const E&>::value)
 	{
 		if (state != other.state)
 			return false;
@@ -93,13 +87,28 @@ protected:
 		return false;
 	}
 
-	template<typename X = T, typename Y = E>
-	typename std::enable_if<
-		not (is_equality_operable<const X&>::value and
-		is_equality_operable<const Y&>::value),
-		bool
-	>::type
-	is_equal_to(const result_base&) const noexcept { return false; }
+	bool is_not_equal_to(const result_base& other) const
+		noexcept(
+			is_nothrow_inequality_operable<const T&>::value and
+			is_nothrow_inequality_operable<const E&>::value)
+	{
+		if (state != other.state)
+			return true;
+
+		switch (state)
+		{
+			case state_type::ok:
+				return area.value != other.area.value;
+
+			case state_type::error:
+				return area.error != other.area.error;
+
+			case state_type::exceptional:
+				return area.exception_ptr != other.area.exception_ptr;
+		}
+
+		return true;
+	}
 
 public:
 	result_base(result_base&& other) noexcept:
@@ -298,13 +307,8 @@ private:
 protected:
 	inline const E& get_error_unchecked() const noexcept { return area.error; }
 	
-	template<typename X = Void, typename Y = E>
-	typename std::enable_if<
-		is_equality_operable<const Y&>::value,
-		bool
-	>::type
-	is_equal_to(const result_base_void& other) const
-		noexcept(is_nothrow_equality_operable<const Y&>::value)
+	bool is_equal_to(const result_base_void& other) const
+		noexcept(is_nothrow_equality_operable<const E&>::value)
 	{
 		if (state != other.state)
 			return false;
@@ -323,14 +327,28 @@ protected:
 
 		return false;
 	}
-
-	template<typename X = Void, typename Y = E>
-	typename std::enable_if<
-		not is_equality_operable<const Y&>::value,
-		bool
-	>::type
-	is_equal_to(const result_base_void&) const noexcept { return false; }
 	
+	bool is_not_equal_to(const result_base_void& other) const
+		noexcept(is_nothrow_inequality_operable<const E&>::value)
+	{
+		if (state != other.state)
+			return true;
+
+		switch (state)
+		{
+			case state_type::ok:
+				return false;
+
+			case state_type::error:
+				return area.error != other.area.error;
+
+			case state_type::exceptional:
+				return area.exception_ptr != other.area.exception_ptr;
+		}
+
+		return true;
+	}
+
 public:
 	result_base_void(result_base_void&& other) noexcept:
 		area(),
