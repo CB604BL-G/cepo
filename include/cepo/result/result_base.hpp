@@ -8,7 +8,6 @@
 #include "cepo/result/slots.hpp"
 #include "cepo/type_traits/is_nothrow_equality_operable.hpp"
 #include "cepo/type_traits/is_nothrow_inequality_operable.hpp"
-#include <asm-generic/signal.h>
 #include <exception>
 #include <utility>
 
