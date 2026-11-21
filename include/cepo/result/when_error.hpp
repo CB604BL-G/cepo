@@ -8,6 +8,9 @@
 #include "cepo/callable/is_callable.hpp"
 #include "cepo/callable/is_nothrow_callable.hpp"
 #include "cepo/configs/namespace_macro.h"
+#include "cepo/macros/nodiscard.hpp"
+#include "cepo/result/when_exceptional.hpp"
+#include <exception>
 #include <type_traits>
 #include <utility>
 
@@ -30,10 +33,19 @@ class result_when_error
 private:
 	//const-only
 	const E* error_ptr;
+	//In some cases, std::exception_ptr is implemented as two pointers,
+	//so here we instead store a pointer to const std::exception_ptr
+	//(const std::exception_ptr*), and in the proxy class that follows,
+	//it will get a free two-state behavior (not counting the two states
+	//that std::exception_ptr already has).
+	const std::exception_ptr* exception_ptr;
 
 public:
-	result_when_error(const E* err) noexcept:
-		error_ptr(err)
+	result_when_error(
+		const E* err,
+		const std::exception_ptr* exception) noexcept:
+		error_ptr(err),
+		exception_ptr(exception)
 	{}
 
 	result_when_error(result_when_error&&) noexcept = default;
@@ -42,19 +54,31 @@ public:
 	~result_when_error() noexcept = default;
 
 	template<typename F>
+	CEPO_NODISCARD
 	auto error(F&& callback) &&
 		noexcept(is_nothrow_callable<F, const E&>::value)
 		-> typename std::enable_if<
 			is_callable<F, const E&>::value and
 			std::is_void<
-				typename call_result<F, const E&>::type>::value
+				typename call_result<F, const E&>::type>::value,
+			result_when_exceptional
 		>::type
 	{
 		if (error_ptr)
 			call(std::forward<F>(callback), *error_ptr);
+
+		return result_when_exceptional{
+			exception_ptr
+		};
 	}
 
-	void ignore_error() && noexcept {}
+	CEPO_NODISCARD
+	result_when_exceptional ignore_error() && noexcept
+	{
+		return result_when_exceptional{
+			exception_ptr
+		};
+	}
 	
 	result_when_error() = delete;
 	result_when_error(const result_when_error&) = delete;

@@ -60,6 +60,7 @@ protected:
 
 	//const-only
 	inline const E& get_error_unchecked() const noexcept { return area.error; }
+	inline const std::exception_ptr& get_exceptional_unchecked() const noexcept { return area.exception_ptr; }
 
 	bool is_equal_to(const result_base& other) const
 		noexcept(
@@ -305,6 +306,7 @@ private:
 
 protected:
 	inline const E& get_error_unchecked() const noexcept { return area.error; }
+	inline const std::exception_ptr& get_exceptional_unchecked() const noexcept { return area.exception_ptr; }
 	
 	bool is_equal_to(const result_base_void& other) const
 		noexcept(is_nothrow_equality_operable<const E&>::value)

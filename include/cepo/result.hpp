@@ -19,55 +19,78 @@
 
 CEPO_NAMESPACE_START;
 
-//This is a tri-state move-only class. During the lifetime of
-//an object it is always in exactly one of three states: ok,
-//error, or exceptional. The exceptional state means that the
-//stored value or error could not be constructed, and that the
-//exception which caused it has been recorded.
+//This is a move-only, copy-deleted class that holds the result
+//of an operation, the error that made it fail, or the exception
+//that escaped while it was being built. It is in exactly one of
+//three states at every moment of its lifetime: ok, error, or
+//exceptional. The three share a union, so nothing is allocated,
+//and the state tag is what decides which member is alive.
 
-//Moreover, the result class is not completely exception-free.
-//It only guarantees that no new exceptions will be thrown
-//along the error-propagation chain, which is why both its
-//constructors and its move assignment operator are noexcept.
-//If you call unwrap_value when the state is exceptional or
-//error, it will throw an exception rather than silently fail
-//and give you an invalid reference. The same applies when
-//calling unwrap_error. The exception thrown when unwrap fails
-//does not carry the exception that may have occurred during
-//construction; use is_exceptional to detect that, and
-//get_exception to rethrow it.
+//A result is never constructed from a value directly.
+//make_result_value and make_result_error build a slot holding T
+//or E, and a result is built from that slot. If the slot failed
+//to construct its payload, or if moving the payload out of the
+//slot throws, the result is exceptional and the exception that
+//was thrown is recorded.
 
-//Moving behaves differently depending on the state, which is
-//something the caller has to keep in mind. Moving an object in
-//the exceptional state propagates the exception: the exception
-//is shared with the new object, no exception is thrown, and the
-//source keeps its state as well, so both objects afterwards
-//refer to the same exception. Moving an object in any other
-//state does not consume the source: it keeps its previous
-//state, but the value or error it stores is left in a valid
-//but unspecified state.
+//The exceptional state means that the last operation threw and
+//that there is no value and no error to hand out. It is not a
+//state one recovers from by waiting: it stays until the object
+//is assigned or destroyed, and while it holds only the state
+//queries, the exception accessor and the propagation chain are
+//meaningful.
 
-//Note on the slot -> result transfer: it is always a move.
-//Because of this, a T (or E) whose move constructor may throw
-//can never produce an ok (respectively error) result at all:
-//make_result_value / make_result_error already fails at that
-//step, and the result ends up exceptional with the exception
-//recorded. In other words, "move-constructible" is not enough
-//here; only types that do not throw on move can actually carry
-//a value state.
+//Only unwrap_value and unwrap_error throw. They throw
+//bad_result_unwrap, which carries a reason identifying the
+//state the call was invalid in; the recorded exception is not
+//part of it, use get_exception to obtain the exception_ptr and
+//rethrow it yourself. Everything else is noexcept: construction,
+//move assignment, and the whole propagation chain, with the
+//callbacks being the only user code that can throw through it.
 
-//The symmetry of cepo::result's operator== and operator!= depends
-//on whether the operator== and operator!= of T, E, and
-//std::exception_ptr are negations of each other. When the states
-//differ, operator== returns false and operator!= returns true
-//directly, without delegating to any type. When the states match,
-//the comparison is delegated to the corresponding type: T for the
-//ok state, E for the error state, and std::exception_ptr for the
-//exceptional state. Therefore, if the result of T1 == T2 is not
-//the negation of T1 != T2, the same will hold for cepo::result;
-//likewise for E and std::exception_ptr. Here, "symmetry"
-//specifically means that operator== and operator!= should produce
-//negated results.
+//Moving in the exceptional state shares the exception. No new
+//exception is thrown, the source keeps its state, and both
+//objects end up referring to the same exception. Moving in any
+//other state does not consume the source either: it keeps its
+//previous state, and the payload it holds is left valid but
+//unspecified.
+
+//Because the slot -> result transfer is always a move, a T or E
+//whose move constructor may throw can never produce an ok or
+//error result at all: the transfer fails at that step and the
+//result is exceptional. Only types that do not throw on move can
+//carry a value state.
+
+//The class also owns the propagation chain. ok and ignore_ok
+//return a proxy that reports whether an error is present, and
+//error and ignore_error on that proxy return one that reports
+//whether an exception is present, so the chain reads
+//ok -> error -> exceptional. A stage whose state does not apply
+//skips its callback, every stage forwards the remaining states
+//unchanged, and ignore_ok, ignore_error and ignore_exceptional
+//end the chain without running anything. All stages but the last
+//are nodiscard, which is what turns an unhandled error or
+//exception into a warning instead of something that disappears
+//in silence.
+
+//Both proxies are views. They hold pointers into the result they
+//came from, they cannot be copied, and their members are rvalue
+//qualified, so they are meant to be consumed by the expression
+//that produced them. Storing one is possible, but it stays valid
+//only while the result it points into is alive.
+
+//Equality compares the state first: results in different states
+//are never equal, and the state decides which payload is
+//compared, T's operator== for an ok result and E's for an error
+//result. Exceptional results compare their exception_ptr, so two
+//results that share an exception after a move compare equal.
+//operator== requires T and E to be equality comparable and
+//operator!= requires them to be inequality comparable; a type
+//that provides only one of the two keeps that restriction on the
+//result instead of failing somewhere inside the comparison body.
+//Neither operator is derived from the other, so a type whose ==
+//and != are not negations of each other keeps that asymmetry
+//here as well.
 template<typename T, typename E>
 class result final
 	: private impl::result_base<T, E>
@@ -143,9 +166,13 @@ public:
 			call(
 				std::forward<F>(callback),
 				this->get_value_unchecked());
+
 		return result_when_error<E>{
 			is_error() ?
 			&this->get_error_unchecked() :
+			nullptr,
+			is_exceptional() ?
+			&this->get_exceptional_unchecked() :
 			nullptr
 		};
 	}
@@ -165,9 +192,26 @@ public:
 			call(
 				std::forward<F>(callback),
 				this->get_value_unchecked());
+
 		return result_when_error<E>{
 			is_error() ?
 			&this->get_error_unchecked() :
+			nullptr,
+			is_exceptional() ?
+			&this->get_exceptional_unchecked() :
+			nullptr
+		};
+	}
+
+	CEPO_NODISCARD
+	result_when_error<E> ignore_ok() const noexcept
+	{
+		return result_when_error<E>{
+			is_error() ?
+			&this->get_error_unchecked() :
+			nullptr,
+			is_exceptional() ?
+			&this->get_exceptional_unchecked() :
 			nullptr
 		};
 	}
@@ -231,6 +275,7 @@ public:
 	}
 
 	using base_type::ok;
+	using base_type::ignore_ok;
 };
 
 template<typename E>
@@ -291,6 +336,7 @@ public:
 	}
 
 	using base_type::ok;
+	using base_type::ignore_ok;
 };
 
 template<typename E>
@@ -352,6 +398,7 @@ public:
 
 	
 	using base_type::ok;
+	using base_type::ignore_ok;
 };
 
 template<typename E>
@@ -413,6 +460,7 @@ public:
 
 
 	using base_type::ok;
+	using base_type::ignore_ok;
 };
 
 CEPO_NAMESPACE_END;

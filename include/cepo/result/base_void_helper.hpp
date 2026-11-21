@@ -34,7 +34,7 @@ protected:
 	}
 
 	bool is_not_equal_to(const result_base_void_helper& other) const
-		noexcept(noexcept(base_type::is_equal_to(other)))
+		noexcept(noexcept(base_type::is_not_equal_to(other)))
 	{
 		return base_type::is_not_equal_to(other);
 	}
@@ -76,9 +76,26 @@ public:
 	{
 		if (is_ok())
 			call(std::forward<F>(callback));
+
 		return result_when_error<E>{
 			is_error() ?
 			&this->get_error_unchecked() :
+			nullptr,
+			is_exceptional() ?
+			&this->get_exceptional_unchecked() :
+			nullptr
+		};
+	}
+
+	CEPO_NODISCARD
+	result_when_error<E> ignore_ok() const noexcept
+	{
+		return result_when_error<E>{
+			is_error() ?
+			&this->get_error_unchecked() :
+			nullptr,
+			is_exceptional() ?
+			&this->get_exceptional_unchecked() :
 			nullptr
 		};
 	}

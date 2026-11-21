@@ -1,17 +1,17 @@
 cmake_minimum_required(VERSION 3.20)
 
-project(OK_ERROR_CHAIN LANGUAGES CXX)
+project(CALLBACK_CATEGORIES LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-add_executable(ok_error_chain test.cpp)
+add_executable(callback_categories test.cpp)
 
-target_include_directories(ok_error_chain PRIVATE
+target_include_directories(callback_categories PRIVATE
 	"${CMAKE_CURRENT_SOURCE_DIR}/../../../../include"
 )
 
-target_link_libraries(ok_error_chain PRIVATE
+target_link_libraries(callback_categories PRIVATE
 	"${CMAKE_CURRENT_SOURCE_DIR}/../../../gen_lib/libcepo.a"
 )

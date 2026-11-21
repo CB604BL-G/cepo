@@ -8,6 +8,7 @@ project(
 add_library(
 	cepo_library
 	"src/result/bad_result_unwrap.cpp"
+	"src/result/when_exceptional.cpp"
 )
 
 set_target_properties(
