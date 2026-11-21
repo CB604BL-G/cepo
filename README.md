@@ -46,7 +46,7 @@ target_link_libraries(my_app PRIVATE cepo::cepo)
 
 `lib.cmake` calls `add_subdirectory` on the CEPO source tree with `EXCLUDE_FROM_ALL` and defines the alias target `cepo::cepo`. Its first statement, `if(TARGET cepo::cepo) return()`, makes additional inclusions in the same project no-ops.
 
-Method A installations, as well as a plain clone of the repository, can instead reference the source tree directly:
+An installed copy and a plain clone both retain the full source tree, so they can reference it directly instead:
 
 ```cmake
 add_subdirectory(/path/to/cepo cepo_build EXCLUDE_FROM_ALL)
@@ -101,7 +101,7 @@ target_link_libraries(my_app PRIVATE cepo::cepo)
 
 `lib.cmake` 以 `EXCLUDE_FROM_ALL` 方式对 CEPO 源码目录调用 `add_subdirectory`，并定义别名目标 `cepo::cepo`。其首条语句 `if(TARGET cepo::cepo) return()` 使同一工程中的重复接入不产生额外效果。
 
-采用方式 A 安装时，或直接使用仓库副本时，也可以不经过环境变量，直接引用源码目录：
+脚本安装的副本与直接克隆的仓库都保有完整源码树，因此也可以不经过环境变量，直接引用源码目录：
 
 ```cmake
 add_subdirectory(/path/to/cepo cepo_build EXCLUDE_FROM_ALL)
