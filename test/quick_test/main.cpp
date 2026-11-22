@@ -1,16 +1,14 @@
-#include "cepo/result.hpp"
-#include "cepo/result/factory.hpp"
+#include "cepo/source_location.hpp"
 #include <cstdio>
-class t
-{
-public:
-	bool operator==(const t&)const noexcept { return true; };
-};
 
 auto main() -> int
 {
-	cepo::result<const void, t> r = cepo::make_result_error<t>();
-	cepo::result<const void, t> rr = cepo::make_result_error<t>();
+	cepo::anywhere_source_location s = CEPO_CURRENT_ANYWHERE_SOURCE_LOCATION();
+	std::printf("%s, %d\n", s.file_name(), s.line());
 
-	std::printf("%d\n", r == rr);
+	CEPO_ANYWHERE_SOURCE_LOCATION(ss);
+	std::printf("%s, %d\n", ss.file_name(), ss.line());
+
+	CEPO_FUNCTION_SOURCE_LOCATION(fs);
+	printf("%s\n", fs.function_name());
 }
