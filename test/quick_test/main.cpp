@@ -1,4 +1,5 @@
 #include "cepo/source_location.hpp"
+#include "cepo/defer.hpp"
 #include <cstdio>
 
 auto main() -> int
@@ -11,4 +12,19 @@ auto main() -> int
 
 	CEPO_FUNCTION_SOURCE_LOCATION(fs);
 	printf("%s\n", fs.function_name());
+
+	CEPO_DEFER
+	{
+		printf("Defer do\n");
+	};
+
+	CEPO_DEFER
+	{
+		CEPO_DEFER
+		{
+			printf("%s\n", fs.function_name());
+		};
+
+		printf("Completed\n");
+	};
 }
