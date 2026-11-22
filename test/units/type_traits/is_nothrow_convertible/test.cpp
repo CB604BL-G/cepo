@@ -8,14 +8,22 @@
 
 int unexpected = 0;
 
+//Silent when the value matches the expectation, so a passing run prints
+//nothing but the summary line at the end of main.
 void put_bool(const char* from, const char* to, bool fact, bool expect) noexcept
 {
+	if (fact == expect)
+	{
+		return;
+	}
+
 	std::printf(
-		"item:\nfrom %s to %s\nvalue: %s\nresult: %s\n\n",
-		from, to, fact ? "true" : "false",
-		expect == fact ? "good" : "bad"
+		"FAIL: from %s to %s\n  value: %s\n  expected: %s\n",
+		from, to,
+		fact ? "true" : "false",
+		expect ? "true" : "false"
 	);
-	unexpected += not (fact == expect);
+	++unexpected;
 }
 
 struct nothrow_ctor_from_int
