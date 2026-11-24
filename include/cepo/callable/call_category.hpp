@@ -4,7 +4,7 @@
 #define CEPO_CALLABLE_CALL_CATEGORY_HPP
 
 #include "cepo/callable/call_result.hpp"
-#include "cepo/configs/namespace_macro.h"
+#include "cepo/configs/namespace_macro.hpp"
 #include "cepo/utility/priority_tag.hpp"
 #include <type_traits>
 

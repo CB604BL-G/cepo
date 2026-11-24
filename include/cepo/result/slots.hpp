@@ -3,7 +3,7 @@
 #ifndef CEPO_RESULT_SLOTS_HPP
 #define CEPO_RESULT_SLOTS_HPP
 
-#include "cepo/configs/namespace_macro.h"
+#include "cepo/configs/namespace_macro.hpp"
 #include "cepo/result/slot_base.hpp"
 #include "cepo/result/slot_tags.hpp"
 #include "cepo/type_traits/conjunction.hpp"

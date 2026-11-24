@@ -3,7 +3,7 @@
 #ifndef CEPO_RESULT_BAD_RESULT_UNWRAP_HPP
 #define CEPO_RESULT_BAD_RESULT_UNWRAP_HPP
 
-#include "cepo/configs/namespace_macro.h"
+#include "cepo/configs/namespace_macro.hpp"
 #include <exception>
 
 CEPO_NAMESPACE_START;

@@ -1,7 +1,7 @@
 //Copyright (c) 2026 CB604BL
 //CEPO - C++ Eleven Patches Open-source
 #include "cepo/result/when_exceptional.hpp"
-#include "cepo/configs/namespace_macro.h"
+#include "cepo/configs/namespace_macro.hpp"
 #include <exception>
 
 CEPO_NAMESPACE_START;

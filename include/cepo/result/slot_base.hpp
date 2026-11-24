@@ -3,7 +3,7 @@
 #ifndef CEPO_RESULT_SLOT_BASE_HPP
 #define CEPO_RESULT_SLOT_BASE_HPP
 
-#include "cepo/configs/namespace_macro.h"
+#include "cepo/configs/namespace_macro.hpp"
 #include "cepo/result/base_forward_declaration.hpp"		// IWYU pragma: keep
 #include <exception>
 #include <new>											// IWYU pragma: keep

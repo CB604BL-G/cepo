@@ -3,7 +3,7 @@
 #ifndef CEPO_SOURCE_LOCATION_HPP
 #define CEPO_SOURCE_LOCATION_HPP
 
-#include "cepo/configs/namespace_macro.h"
+#include "cepo/configs/namespace_macro.hpp"
 
 #if defined(__clang__) or defined(__GNUC__)
 	#define CEPO_IMPL_CURRENT_FUNCTION __PRETTY_FUNCTION__

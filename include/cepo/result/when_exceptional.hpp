@@ -6,7 +6,7 @@
 #include "cepo/callable/call.hpp"
 #include "cepo/callable/is_callable.hpp"
 #include "cepo/callable/is_nothrow_callable.hpp"
-#include "cepo/configs/namespace_macro.h"
+#include "cepo/configs/namespace_macro.hpp"
 #include <exception>
 #include <type_traits>
 #include <utility>

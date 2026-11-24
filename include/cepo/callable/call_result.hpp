@@ -5,7 +5,7 @@
 
 #include "cepo/callable/call_category_macros.hpp"
 #include "cepo/callable/is_callable.hpp"
-#include "cepo/configs/namespace_macro.h"
+#include "cepo/configs/namespace_macro.hpp"
 #include "cepo/utility/priority_tag.hpp"
 
 #define BASIC_CALL(F, Args) \

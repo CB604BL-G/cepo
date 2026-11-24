@@ -3,7 +3,7 @@
 #ifndef CEPO_TYPE_TRAITS_IS_BOOL_TESTABLE_HPP
 #define CEPO_TYPE_TRAITS_IS_BOOL_TESTABLE_HPP
 
-#include "cepo/configs/namespace_macro.h"
+#include "cepo/configs/namespace_macro.hpp"
 #include "cepo/type_traits/bool_constant.hpp"
 #include <type_traits>
 #include <utility>

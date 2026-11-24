@@ -4,7 +4,7 @@
 #define CEPO_CALLABLE_IS_NOTHROW_CALLABLE_HPP
 
 #include "cepo/callable/call_category_macros.hpp"
-#include "cepo/configs/namespace_macro.h"
+#include "cepo/configs/namespace_macro.hpp"
 #include "cepo/type_traits/bool_constant.hpp"
 #include "cepo/utility/priority_tag.hpp"
 

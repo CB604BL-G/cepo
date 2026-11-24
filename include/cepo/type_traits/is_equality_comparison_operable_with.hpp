@@ -3,7 +3,7 @@
 #ifndef CEPO_TYPE_TRAITS_IS_EQUALITY_COMPARISON_OPERABLE_WITH_HPP
 #define CEPO_TYPE_TRAITS_IS_EQUALITY_COMPARISON_OPERABLE_WITH_HPP
 
-#include "cepo/configs/namespace_macro.h"
+#include "cepo/configs/namespace_macro.hpp"
 #include "cepo/type_traits/bool_constant.hpp"
 #include "cepo/type_traits/is_oneway_equality_comparison_operable_with.hpp"
 

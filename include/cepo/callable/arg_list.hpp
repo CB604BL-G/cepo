@@ -3,7 +3,7 @@
 #ifndef CEPO_CALLABLE_ARG_LIST_HPP
 #define CEPO_CALLABLE_ARG_LIST_HPP
 
-#include "cepo/configs/namespace_macro.h"
+#include "cepo/configs/namespace_macro.hpp"
 #include <cstddef>
 
 CEPO_NAMESPACE_START;

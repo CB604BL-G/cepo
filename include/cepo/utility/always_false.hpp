@@ -3,7 +3,7 @@
 #ifndef CEPO_UTILITY_ALWAYS_FALSE_HPP
 #define CEPO_UTILITY_ALWAYS_FALSE_HPP
 
-#include "cepo/configs/namespace_macro.h"
+#include "cepo/configs/namespace_macro.hpp"
 
 CEPO_NAMESPACE_START;
 

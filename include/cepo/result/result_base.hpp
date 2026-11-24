@@ -3,7 +3,7 @@
 #ifndef CEPO_RESULT_RESULT_BASE_HPP
 #define CEPO_RESULT_RESULT_BASE_HPP
 
-#include "cepo/configs/namespace_macro.h"
+#include "cepo/configs/namespace_macro.hpp"
 #include "cepo/result/bad_result_unwrap.hpp"
 #include "cepo/result/slots.hpp"
 #include "cepo/type_traits/is_nothrow_equality_operable.hpp"

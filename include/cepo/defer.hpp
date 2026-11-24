@@ -3,7 +3,7 @@
 #ifndef CEPO_DEFER_HPP
 #define CEPO_DEFER_HPP
 
-#include "cepo/configs/namespace_macro.h"
+#include "cepo/configs/namespace_macro.hpp"
 #include <utility>
 
 //Reference Project: https://github.com/UN-chief/CPP_Defer

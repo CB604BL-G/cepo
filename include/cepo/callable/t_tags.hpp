@@ -3,7 +3,7 @@
 #ifndef CEPO_CALLABLE_T_TAGS_HPP
 #define CEPO_CALLABLE_T_TAGS_HPP
 
-#include "cepo/configs/namespace_macro.h"
+#include "cepo/configs/namespace_macro.hpp"
 
 CEPO_IMPL_NAMESPACE_START;
 

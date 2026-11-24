@@ -3,7 +3,7 @@
 #ifndef CEPO_TYPE_TRAITS_NEGATION_HPP
 #define CEPO_TYPE_TRAITS_NEGATION_HPP
 
-#include "cepo/configs/namespace_macro.h"
+#include "cepo/configs/namespace_macro.hpp"
 #include "cepo/type_traits/bool_constant.hpp"
 
 CEPO_NAMESPACE_START;

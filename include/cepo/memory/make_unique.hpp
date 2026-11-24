@@ -3,7 +3,7 @@
 #ifndef CEPO_MEMORY_MAKE_UNIQUE_HPP
 #define CEPO_MEMORY_MAKE_UNIQUE_HPP
 
-#include "cepo/configs/namespace_macro.h"
+#include "cepo/configs/namespace_macro.hpp"
 #include "cepo/macros/nodiscard.hpp"
 #include "cepo/type_traits/is_bounded_array.hpp"
 #include "cepo/type_traits/is_unbounded_array.hpp"

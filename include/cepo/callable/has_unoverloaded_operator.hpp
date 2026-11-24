@@ -3,7 +3,7 @@
 #ifndef CEPO_CALLABLE_HAS_UNOVERLOADED_OPERATOR_HPP
 #define CEPO_CALLABLE_HAS_UNOVERLOADED_OPERATOR_HPP
 
-#include "cepo/configs/namespace_macro.h"
+#include "cepo/configs/namespace_macro.hpp"
 #include <type_traits>
 
 //You can also think of

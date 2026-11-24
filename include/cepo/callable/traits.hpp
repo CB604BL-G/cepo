@@ -6,7 +6,7 @@
 #include "cepo/callable/arg_list.hpp"
 #include "cepo/callable/has_unoverloaded_operator.hpp"
 #include "cepo/callable/t_tags.hpp"
-#include "cepo/configs/namespace_macro.h"
+#include "cepo/configs/namespace_macro.hpp"
 #include "cepo/utility/always_false.hpp"
 #include <cstddef>
 #include <type_traits>

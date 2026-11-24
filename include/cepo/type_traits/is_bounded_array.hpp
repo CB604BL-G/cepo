@@ -3,7 +3,7 @@
 #ifndef CEPO_TYPE_TRAITS_IS_BOUNDED_ARRAY_HPP
 #define CEPO_TYPE_TRAITS_IS_BOUNDED_ARRAY_HPP
 
-#include "cepo/configs/namespace_macro.h"
+#include "cepo/configs/namespace_macro.hpp"
 #include <cstddef>
 #include <type_traits>
 

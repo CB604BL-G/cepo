@@ -3,7 +3,7 @@
 #ifndef CEPO_RESULT_FACTORY_HPP
 #define CEPO_RESULT_FACTORY_HPP
 
-#include "cepo/configs/namespace_macro.h"
+#include "cepo/configs/namespace_macro.hpp"
 #include "cepo/macros/nodiscard.hpp"
 #include "cepo/result/slots.hpp"
 #include <type_traits>

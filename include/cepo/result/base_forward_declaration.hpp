@@ -3,7 +3,7 @@
 #ifndef CEPO_RESULT_BASE_FORWARD_DECLARATION_HPP
 #define CEPO_RESULT_BASE_FORWARD_DECLARATION_HPP
 
-#include "cepo/configs/namespace_macro.h"
+#include "cepo/configs/namespace_macro.hpp"
 
 CEPO_IMPL_NAMESPACE_START;
 

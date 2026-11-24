@@ -1,7 +1,7 @@
 //Copyright (c) 2026 CB604BL
 //CEPO - C++ Eleven Patches Open-source
-#ifndef CEPO_CONFIGS_NAMESPACE_MACRO_H
-#define CEPO_CONFIGS_NAMESPACE_MACRO_H
+#ifndef CEPO_CONFIGS_NAMESPACE_MACRO_HPP
+#define CEPO_CONFIGS_NAMESPACE_MACRO_HPP
 
 //Trailing semicolons on NAMESPACE_START/END are for tree-sitter, not the
 //compiler. tree-sitter does not expand macros, so without a terminator it
@@ -17,4 +17,4 @@
 #define CEPO_IMPL_NAMESPACE_START namespace cepo { namespace impl {
 #define CEPO_IMPL_NAMESPACE_END } }
 
-#endif //CEPO_CONFIGS_NAMESPACE_MACRO_H
+#endif //CEPO_CONFIGS_NAMESPACE_MACRO_HPP

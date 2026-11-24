@@ -3,7 +3,7 @@
 #ifndef CEPO_UTILITY_AS_CONST_HPP
 #define CEPO_UTILITY_AS_CONST_HPP
 
-#include "cepo/configs/namespace_macro.h"
+#include "cepo/configs/namespace_macro.hpp"
 #include "cepo/macros/nodiscard.hpp"
 
 CEPO_NAMESPACE_START;

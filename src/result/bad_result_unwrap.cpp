@@ -1,7 +1,7 @@
 //Copyright (c) 2026 CB604BL
 //CEPO - C++ Eleven Patches Open-source
 #include "cepo/result/bad_result_unwrap.hpp"
-#include "cepo/configs/namespace_macro.h"
+#include "cepo/configs/namespace_macro.hpp"
 
 CEPO_NAMESPACE_START;
 

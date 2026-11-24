@@ -3,7 +3,7 @@
 #ifndef CEPO_TYPE_TRAITS_CONJUNCTION_HPP
 #define CEPO_TYPE_TRAITS_CONJUNCTION_HPP
 
-#include "cepo/configs/namespace_macro.h"
+#include "cepo/configs/namespace_macro.hpp"
 #include <type_traits>
 
 CEPO_NAMESPACE_START;
