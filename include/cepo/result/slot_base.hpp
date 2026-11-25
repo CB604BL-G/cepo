@@ -26,14 +26,14 @@ private:
 	};
 
 	area_type area;
-	bool is_successful;
+	bool is_in_exceptional_state;
 
 	template<typename... Args>
 	void construct_T(Args&&... args)
 		noexcept(std::is_nothrow_constructible<T, Args...>::value)
 	{
 		new (&area.slot) T(std::forward<Args>(args)...);
-		is_successful = true;
+		is_in_exceptional_state = false;
 	}
 
 	template<typename... Args>
@@ -41,12 +41,12 @@ private:
 		noexcept(std::is_nothrow_constructible<std::exception_ptr, Args...>::value)
 	{
 		new (&area.exception_ptr) std::exception_ptr(std::forward<Args>(args)...);
-		is_successful = false;
+		is_in_exceptional_state = true;
 	}
 
 	void destroy_self() noexcept
 	{
-		if (is_successful)
+		if (not is_in_exceptional_state)
 			area.slot.~T();
 		else
 		{
@@ -58,7 +58,7 @@ private:
 	void destroy_to_useless() noexcept
 	{
 		destroy_self();
-		is_successful = false;
+		is_in_exceptional_state = true;
 	}
 
 public:
@@ -70,7 +70,7 @@ public:
 		>::type = 0>
 	explicit result_slot_base(Args&&... args) noexcept:
 		area(),
-		is_successful(false)
+		is_in_exceptional_state(true)
 	{
 		try
 		{
@@ -84,9 +84,9 @@ public:
 
 	result_slot_base(result_slot_base&& other) noexcept:
 		area(),
-		is_successful(false)
+		is_in_exceptional_state(true)
 	{
-		if (not other.is_successful)
+		if (other.is_in_exceptional_state)
 		{
 			//Sharing exception instead of moving
 			construct_exception_ptr(other.area.exception_ptr);
@@ -111,7 +111,7 @@ public:
 		if (this == &other) return *this;
 
 		destroy_to_useless();
-		if (not other.is_successful)
+		if (other.is_in_exceptional_state)
 		{
 			construct_exception_ptr(other.area.exception_ptr);
 			return *this;
@@ -144,7 +144,7 @@ public:
 
 	bool is_exceptional() const noexcept
 	{
-		return not is_successful;
+		return is_in_exceptional_state;
 	}
 
 	std::exception_ptr get_exception() const noexcept
