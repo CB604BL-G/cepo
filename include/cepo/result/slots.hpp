@@ -6,9 +6,6 @@
 #include "cepo/configs/namespace_macro.hpp"
 #include "cepo/result/slot_base.hpp"
 #include "cepo/result/slot_tags.hpp"
-#include "cepo/type_traits/conjunction.hpp"
-#include "cepo/type_traits/disjunction.hpp"
-#include "cepo/type_traits/negation.hpp"
 #include <type_traits>
 
 CEPO_NAMESPACE_START;
@@ -18,30 +15,86 @@ class result_value_slot
 	: private impl::result_slot_base<T, impl::result_slot_value_tag>
 {
 private:
-	static_assert(std::is_object<T>::value or std::is_void<T>::value,
-		"cepo::result_value_slot: T must be object types or void type (no references/function)");
+	static_assert(std::is_object<T>::value,
+		"cepo::result_value_slot: T must be an object type (no references/void/function)");
 
 	static_assert(
-		disjunction<
-			conjunction<
-				negation<std::is_void<T>>, std::is_move_constructible<T>>,
-			std::is_void<T>
-		>::value,
-		"cepo::result_value_slot: T must be move-constructible if T is not void type");
+		std::is_move_constructible<T>::value,
+		"cepo::result_value_slot: T must be move-constructible");
 
 	static_assert(
-		disjunction<
-			conjunction<
-				negation<std::is_void<T>>, std::is_nothrow_destructible<T>>,
-			std::is_void<T>
-		>::value,
-		"cepo::result_value_slot: T must have nothrow destructor if T is not void type");
+		std::is_nothrow_destructible<T>::value,
+		"cepo::result_value_slot: T must have nothrow destructor");
 	
-	template<typename Tp, typename Ep>
-	friend class ::cepo::impl::result_base;
+	using tag_type = impl::result_slot_value_tag;
+	using base_type = impl::result_slot_base<T, tag_type>;
 
 public:
-	using impl::result_slot_base<T, impl::result_slot_value_tag>::result_slot_base;
+	using impl::result_slot_base<T, tag_type>::result_slot_base;
+
+	using base_type::operator*;
+	using base_type::is_exceptional;
+	using base_type::get_exception;
+};
+
+template<>
+class result_value_slot<void>
+	: private impl::result_slot_base<void, impl::result_slot_value_tag>
+{
+private:
+	using tag_type = impl::result_slot_value_tag;
+	using base_type = impl::result_slot_base<void, tag_type>;
+
+public:
+	using impl::result_slot_base<void, tag_type>::result_slot_base;
+
+	using base_type::is_exceptional;
+	using base_type::get_exception;
+};
+
+template<>
+class result_value_slot<const void>
+	: private impl::result_slot_base<const void, impl::result_slot_value_tag>
+{
+private:
+	using tag_type = impl::result_slot_value_tag;
+	using base_type = impl::result_slot_base<const void, tag_type>;
+
+public:
+	using impl::result_slot_base<const void, tag_type>::result_slot_base;
+
+	using base_type::is_exceptional;
+	using base_type::get_exception;
+};
+
+template<>
+class result_value_slot<volatile void>
+	: private impl::result_slot_base<volatile void, impl::result_slot_value_tag>
+{
+private:
+	using tag_type = impl::result_slot_value_tag;
+	using base_type = impl::result_slot_base<volatile void, tag_type>;
+
+public:
+	using impl::result_slot_base<volatile void, tag_type>::result_slot_base;
+
+	using base_type::is_exceptional;
+	using base_type::get_exception;
+};
+
+template<>
+class result_value_slot<const volatile void>
+	: private impl::result_slot_base<const volatile void, impl::result_slot_value_tag>
+{
+private:
+	using tag_type = impl::result_slot_value_tag;
+	using base_type = impl::result_slot_base<const volatile void, tag_type>;
+
+public:
+	using impl::result_slot_base<const volatile void, tag_type>::result_slot_base;
+
+	using base_type::is_exceptional;
+	using base_type::get_exception;
 };
 
 template<typename E>
@@ -60,21 +113,15 @@ private:
 		std::is_nothrow_destructible<E>::value,
 		"cepo::result_error_slot: E must have nothrow destructor");
 	
-	template<typename Tp, typename Ep>
-	friend class ::cepo::impl::result_base;
-	
-	//Do NOT remove this friendship, even though the value side does not
-	//exist when T is void. cepo::result<void, E> is built from a
-	//result_error_slot<E>, and cepo::impl::result_base_void has to read
-	//that slot's is_successful / area / destroy_self(). Those
-	//members are inherited privately from impl::result_slot_base, so
-	//this declaration is what makes the private base cast legal. Without
-	//it every error path of result<void, E> fails to compile.
-	template<typename Vp, typename Ep>
-	friend class ::cepo::impl::result_base_void;
+	using tag_type = impl::result_slot_error_tag;
+	using base_type = impl::result_slot_base<E, tag_type>;
 
 public:
-	using impl::result_slot_base<E, impl::result_slot_error_tag>::result_slot_base;
+	using impl::result_slot_base<E, tag_type>::result_slot_base;
+
+	using base_type::operator*;
+	using base_type::is_exceptional;
+	using base_type::get_exception;
 };
 
 CEPO_NAMESPACE_END;

@@ -4,7 +4,6 @@
 #define CEPO_RESULT_SLOT_BASE_HPP
 
 #include "cepo/configs/namespace_macro.hpp"
-#include "cepo/result/base_forward_declaration.hpp"		// IWYU pragma: keep
 #include <exception>
 #include <new>											// IWYU pragma: keep
 #include <type_traits>
@@ -16,12 +15,6 @@ template<typename T, typename Tag>
 class result_slot_base
 {
 private:
-	template<typename Tp, typename Ep>
-	friend class ::cepo::impl::result_base;
-
-	template<typename Void, typename Ep>
-	friend class ::cepo::impl::result_base_void;
-
 	//Need an uninitialized area
 	union area_type
 	{
@@ -34,6 +27,22 @@ private:
 
 	area_type area;
 	bool is_successful;
+
+	template<typename... Args>
+	void construct_T(Args&&... args)
+		noexcept(std::is_nothrow_constructible<T, Args...>::value)
+	{
+		new (&area.slot) T(std::forward<Args>(args)...);
+		is_successful = true;
+	}
+
+	template<typename... Args>
+	void construct_exception_ptr(Args&&... args)
+		noexcept(std::is_nothrow_constructible<std::exception_ptr, Args...>::value)
+	{
+		new (&area.exception_ptr) std::exception_ptr(std::forward<Args>(args)...);
+		is_successful = false;
+	}
 
 	void destroy_self() noexcept
 	{
@@ -65,12 +74,11 @@ public:
 	{
 		try
 		{
-			new (&area.slot) T(std::forward<Args>(args)...);
-			is_successful = true;
+			construct_T(std::forward<Args>(args)...);
 		}
 		catch (...)
 		{
-			new (&area.exception_ptr) std::exception_ptr(std::current_exception());
+			construct_exception_ptr(std::current_exception());
 		}
 	}
 
@@ -81,18 +89,17 @@ public:
 		if (not other.is_successful)
 		{
 			//Sharing exception instead of moving
-			new (&area.exception_ptr) std::exception_ptr(other.area.exception_ptr);
+			construct_exception_ptr(other.area.exception_ptr);
 			return;
 		}
 		
 		try
 		{
-			new (&area.slot) T(std::move(other.area.slot));
-			is_successful = true;
+			construct_T(std::move(other.area.slot));
 		}
 		catch (...)
 		{
-			new (&area.exception_ptr) std::exception_ptr(std::current_exception());
+			construct_exception_ptr(std::current_exception());
 		}
 
 		//The original object remains unchanged,
@@ -106,21 +113,45 @@ public:
 		destroy_to_useless();
 		if (not other.is_successful)
 		{
-			new (&area.exception_ptr) std::exception_ptr(other.area.exception_ptr);
+			construct_exception_ptr(other.area.exception_ptr);
 			return *this;
 		}
 
 		try
 		{
-			new (&area.slot) T(std::move(other.area.slot));
-			is_successful = true;
+			construct_T(std::move(other.area.slot));
 		}
 		catch (...)
 		{
-			new (&area.exception_ptr) std::exception_ptr(std::current_exception());
+			construct_exception_ptr(std::current_exception());
 		}
 		
 		return *this;
+	}
+
+	//Unchecked: dereferencing an exceptional slot reads the dead branch
+	//of the union, which is undefined behavior. Check is_exceptional()
+	//first; cepo::result::unwrap_value is the checked path.
+	T& operator*() noexcept
+	{
+		return area.slot;
+	}
+
+	const T& operator*() const noexcept
+	{
+		return area.slot;
+	}
+
+	bool is_exceptional() const noexcept
+	{
+		return not is_successful;
+	}
+
+	std::exception_ptr get_exception() const noexcept
+	{
+		return is_exceptional()
+			? area.exception_ptr
+			: std::exception_ptr{nullptr};
 	}
 
 	~result_slot_base() noexcept
@@ -141,6 +172,9 @@ public:
 	result_slot_base& operator=(result_slot_base&&) noexcept = default;
 	~result_slot_base() noexcept = default;
 
+	bool is_exceptional() const noexcept { return false; }
+	std::exception_ptr get_exception() const noexcept { return std::exception_ptr{nullptr}; }
+
 	result_slot_base(const result_slot_base&) = delete;
 	result_slot_base& operator=(const result_slot_base&) = delete;
 };
@@ -153,6 +187,9 @@ public:
 	result_slot_base(result_slot_base&&) noexcept = default;
 	result_slot_base& operator=(result_slot_base&&) noexcept = default;
 	~result_slot_base() noexcept = default;
+
+	bool is_exceptional() const noexcept { return false; }
+	std::exception_ptr get_exception() const noexcept { return std::exception_ptr{nullptr}; }
 
 	result_slot_base(const result_slot_base&) = delete;
 	result_slot_base& operator=(const result_slot_base&) = delete;
@@ -167,6 +204,9 @@ public:
 	result_slot_base& operator=(result_slot_base&&) noexcept = default;
 	~result_slot_base() noexcept = default;
 
+	bool is_exceptional() const noexcept { return false; }
+	std::exception_ptr get_exception() const noexcept { return std::exception_ptr{nullptr}; }
+
 	result_slot_base(const result_slot_base&) = delete;
 	result_slot_base& operator=(const result_slot_base&) = delete;
 };
@@ -179,6 +219,9 @@ public:
 	result_slot_base(result_slot_base&&) noexcept = default;
 	result_slot_base& operator=(result_slot_base&&) noexcept = default;
 	~result_slot_base() noexcept = default;
+
+	bool is_exceptional() const noexcept { return false; }
+	std::exception_ptr get_exception() const noexcept { return std::exception_ptr{nullptr}; }
 
 	result_slot_base(const result_slot_base&) = delete;
 	result_slot_base& operator=(const result_slot_base&) = delete;

@@ -9,6 +9,7 @@
 #include "cepo/type_traits/is_nothrow_equality_operable.hpp"
 #include "cepo/type_traits/is_nothrow_inequality_operable.hpp"
 #include <exception>
+#include <type_traits>
 #include <utility>
 
 CEPO_IMPL_NAMESPACE_START;
@@ -51,6 +52,30 @@ private:
 	void destroy_to_useless() noexcept
 	{
 		destroy_self();
+		state = state_type::exceptional;
+	}
+
+	template<typename... Args>
+	void construct_T(Args&&... args)
+		noexcept(std::is_nothrow_constructible<T, Args...>::value)
+	{
+		new (&area.value) T(std::forward<Args>(args)...);
+		state = state_type::ok;
+	}
+
+	template<typename... Args>
+	void construct_E(Args&&... args)
+		noexcept(std::is_nothrow_constructible<E, Args...>::value)
+	{
+		new (&area.error) E(std::forward<Args>(args)...);
+		state = state_type::error;
+	}
+
+	template<typename... Args>
+	void construct_exception_ptr(Args&&... args)
+		noexcept(std::is_nothrow_constructible<std::exception_ptr, Args...>::value)
+	{
+		new (&area.exception_ptr) std::exception_ptr(std::forward<Args>(args)...);
 		state = state_type::exceptional;
 	}
 
@@ -118,47 +143,43 @@ public:
 		if (other.is_exceptional())
 		{
 			//Sharing exception instead of moving
-			new (&area.exception_ptr) std::exception_ptr(other.area.exception_ptr);
+			construct_exception_ptr(other.area.exception_ptr);
 			return;
 		}
 
 		try
 		{
 			if (other.is_ok())
-			{
-				new (&area.value) T(std::move(other.area.value));
-				state = state_type::ok;
-			}
+				construct_T(std::move(other.area.value));
 			else
-			{
-				new (&area.error) E(std::move(other.area.error));
-				state = state_type::error;
-			}
+				construct_E(std::move(other.area.error));
 		}
 		catch (...)
 		{
-			new (&area.exception_ptr) std::exception_ptr(std::current_exception());
+			construct_exception_ptr(std::current_exception());
 		}
+
+		//The original object remains unchanged,
+		//and the stored value becomes valid but unspecified
 	}
 
 	result_base(result_value_slot<T>&& value) noexcept:
 		area(),
 		state(state_type::exceptional)
 	{
-		if (not value.is_successful)
+		if (value.is_exceptional())
 		{
-			new (&area.exception_ptr) std::exception_ptr(value.area.exception_ptr);
+			construct_exception_ptr(value.get_exception());
 			return;
 		}
 
 		try
 		{
-			new (&area.value) T(std::move(value.area.slot));
-			state = state_type::ok;
+			construct_T(std::move(*value));
 		}
 		catch (...)
 		{
-			new (&area.exception_ptr) std::exception_ptr(std::current_exception());
+			construct_exception_ptr(std::current_exception());
 		}
 	}
 
@@ -166,20 +187,19 @@ public:
 		area(),
 		state(state_type::exceptional)
 	{
-		if (not error.is_successful)
+		if (error.is_exceptional())
 		{
-			new (&area.exception_ptr) std::exception_ptr(error.area.exception_ptr);
+			construct_exception_ptr(error.get_exception());
 			return;
 		}
 
 		try
 		{
-			new (&area.error) E(std::move(error.area.slot));
-			state = state_type::error;
+			construct_E(std::move(*error));
 		}
 		catch (...)
 		{
-			new (&area.exception_ptr) std::exception_ptr(std::current_exception());
+			construct_exception_ptr(std::current_exception());
 		}
 	}
 
@@ -190,26 +210,20 @@ public:
 		destroy_to_useless();
 		if (other.is_exceptional())
 		{
-			new (&area.exception_ptr) std::exception_ptr(other.area.exception_ptr);
+			construct_exception_ptr(other.area.exception_ptr);
 			return *this;
 		}
 
 		try
 		{
 			if (other.is_ok())
-			{
-				new (&area.value) T(std::move(other.area.value));
-				state = state_type::ok;
-			}
+				construct_T(std::move(other.area.value));
 			else
-			{
-				new (&area.error) E(std::move(other.area.error));
-				state = state_type::error;
-			}
+				construct_E(std::move(other.area.error));
 		}
 		catch (...)
 		{
-			new (&area.exception_ptr) std::exception_ptr(std::current_exception());
+			construct_exception_ptr(std::current_exception());
 		}
 
 		return *this;
@@ -304,6 +318,22 @@ private:
 		state = state_type::exceptional;
 	}
 
+	template<typename... Args>
+	void construct_E(Args&&... args)
+		noexcept(std::is_nothrow_constructible<E, Args...>::value)
+	{
+		new (&area.error) E(std::forward<Args>(args)...);
+		state = state_type::error;
+	}
+
+	template<typename... Args>
+	void construct_exception_ptr(Args&&... args)
+		noexcept(std::is_nothrow_constructible<std::exception_ptr, Args...>::value)
+	{
+		new (&area.exception_ptr) std::exception_ptr(std::forward<Args>(args)...);
+		state = state_type::exceptional;
+	}
+
 protected:
 	inline const E& get_error_unchecked() const noexcept { return area.error; }
 	inline const std::exception_ptr& get_exceptional_unchecked() const noexcept { return area.exception_ptr; }
@@ -357,7 +387,8 @@ public:
 	{
 		if (other.is_exceptional())
 		{
-			new (&area.exception_ptr) std::exception_ptr(other.area.exception_ptr);
+			//Sharing exception instead of moving
+			construct_exception_ptr(other.area.exception_ptr);
 			return;
 		}
 		else if (other.is_ok())
@@ -368,12 +399,11 @@ public:
 
 		try
 		{
-			new (&area.error) E(std::move(other.area.error));
-			state = state_type::error;
+			construct_E(std::move(other.area.error));
 		}
 		catch (...)
 		{
-			new (&area.exception_ptr) std::exception_ptr(std::current_exception());
+			construct_exception_ptr(std::current_exception());
 		}
 	}
 
@@ -387,20 +417,19 @@ public:
 		area(),
 		state(state_type::exceptional)
 	{
-		if (not error.is_successful)
+		if (error.is_exceptional())
 		{
-			new (&area.exception_ptr) std::exception_ptr(error.area.exception_ptr);
+			construct_exception_ptr(error.get_exception());
 			return;
 		}
 
 		try
 		{
-			new (&area.error) E(std::move(error.area.slot));
-			state = state_type::error;
+			construct_E(std::move(*error));
 		}
 		catch (...)
 		{
-			new (&area.exception_ptr) std::exception_ptr(std::current_exception());
+			construct_exception_ptr(std::current_exception());
 		}
 	}
 
@@ -411,7 +440,7 @@ public:
 		destroy_to_useless();
 		if (other.is_exceptional())
 		{
-			new (&area.exception_ptr) std::exception_ptr(other.area.exception_ptr);
+			construct_exception_ptr(other.area.exception_ptr);
 			return *this;
 		}
 		else if (other.is_ok())
@@ -422,12 +451,11 @@ public:
 
 		try
 		{
-			new (&area.error) E(std::move(other.area.error));
-			state = state_type::error;
+			construct_E(std::move(other.area.error));
 		}
 		catch (...)
 		{
-			new (&area.exception_ptr) std::exception_ptr(std::current_exception());
+			construct_exception_ptr(std::current_exception());
 		}
 
 		return *this;
