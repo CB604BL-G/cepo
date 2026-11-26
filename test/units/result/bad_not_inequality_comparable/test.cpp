@@ -1,6 +1,7 @@
-//Must not compile: the operator!= is constrained on is_inequality_operable,
-//which is checked independently of is_equality_operable. A type that only
-//provides operator== therefore supports == but not !=.
+//Must not compile: operator!= is constrained on
+//is_callable<comparator::not_equal_to, const T&, const T&>, which is checked
+//independently of the equality constraint. A type that only provides
+//operator== therefore supports == but not !=.
 #include "cepo/result.hpp"
 #include "cepo/result/factory.hpp"
 

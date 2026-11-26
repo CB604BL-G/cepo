@@ -3,11 +3,10 @@
 #ifndef CEPO_RESULT_RESULT_BASE_HPP
 #define CEPO_RESULT_RESULT_BASE_HPP
 
+#include "cepo/callable/is_nothrow_callable.hpp"
 #include "cepo/configs/namespace_macro.hpp"
 #include "cepo/result/bad_result_unwrap.hpp"
 #include "cepo/result/slots.hpp"
-#include "cepo/type_traits/is_nothrow_equality_operable.hpp"
-#include "cepo/type_traits/is_nothrow_inequality_operable.hpp"
 #include <exception>
 #include <type_traits>
 #include <utility>
@@ -87,52 +86,29 @@ protected:
 	inline const E& get_error_unchecked() const noexcept { return area.error; }
 	inline const std::exception_ptr& get_exceptional_unchecked() const noexcept { return area.exception_ptr; }
 
-	bool is_equal_to(const result_base& other) const
+	template<typename Comparator>
+	bool compare_with(Comparator cmp, const result_base& other) const
 		noexcept(
-			//T and E are required to be object
-			//so there is no reference to be removed
-			is_nothrow_equality_operable<const T&>::value and
-			is_nothrow_equality_operable<const E&>::value)
+			is_nothrow_callable<Comparator, const T&, const T&>::value and
+			is_nothrow_callable<Comparator, const E&, const E&>::value)
 	{
 		if (state != other.state)
-			return false;
+			return cmp(state, other.state);
 
 		switch (state)
 		{
 			case state_type::ok:
-				return area.value == other.area.value;
+				return cmp(area.value, other.area.value);
 
 			case state_type::error:
-				return area.error == other.area.error;
+				return cmp(area.error, other.area.error);
 
 			case state_type::exceptional:
-				return area.exception_ptr == other.area.exception_ptr;
+				return cmp(area.exception_ptr, other.area.exception_ptr);
 		}
 
+		//It is UB when this statement is executed
 		return false;
-	}
-
-	bool is_not_equal_to(const result_base& other) const
-		noexcept(
-			is_nothrow_inequality_operable<const T&>::value and
-			is_nothrow_inequality_operable<const E&>::value)
-	{
-		if (state != other.state)
-			return true;
-
-		switch (state)
-		{
-			case state_type::ok:
-				return area.value != other.area.value;
-
-			case state_type::error:
-				return area.error != other.area.error;
-
-			case state_type::exceptional:
-				return area.exception_ptr != other.area.exception_ptr;
-		}
-
-		return true;
 	}
 
 public:
@@ -338,48 +314,28 @@ protected:
 	inline const E& get_error_unchecked() const noexcept { return area.error; }
 	inline const std::exception_ptr& get_exceptional_unchecked() const noexcept { return area.exception_ptr; }
 	
-	bool is_equal_to(const result_base_void& other) const
-		noexcept(is_nothrow_equality_operable<const E&>::value)
+	template<typename Comparator>
+	bool compare_with(Comparator cmp, const result_base_void& other) const
+		noexcept(is_nothrow_callable<Comparator, const E&, const E&>::value)
 	{
 		if (state != other.state)
-			return false;
+			return cmp(state, other.state);
 
 		switch (state)
 		{
 			case state_type::ok:
-				return true;
+				return cmp(state, other.state);
 
 			case state_type::error:
-				return area.error == other.area.error;
+				return cmp(area.error, other.area.error);
 
 			case state_type::exceptional:
-				return area.exception_ptr == other.area.exception_ptr;
+				return cmp(area.exception_ptr, other.area.exception_ptr);
 		}
 
 		return false;
 	}
 	
-	bool is_not_equal_to(const result_base_void& other) const
-		noexcept(is_nothrow_inequality_operable<const E&>::value)
-	{
-		if (state != other.state)
-			return true;
-
-		switch (state)
-		{
-			case state_type::ok:
-				return false;
-
-			case state_type::error:
-				return area.error != other.area.error;
-
-			case state_type::exceptional:
-				return area.exception_ptr != other.area.exception_ptr;
-		}
-
-		return true;
-	}
-
 public:
 	result_base_void(result_base_void&& other) noexcept:
 		area(),

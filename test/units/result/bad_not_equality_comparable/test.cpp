@@ -1,6 +1,7 @@
-//Must not compile: operator== is constrained on is_equality_operable, so a
-//stored type without a usable operator== makes the comparison unavailable
-//instead of failing somewhere inside the comparison itself.
+//Must not compile: operator== is constrained on
+//is_callable<comparator::equal_to, const T&, const T&>, so a stored type
+//without a usable operator== makes the comparison unavailable instead of
+//failing somewhere inside the comparison itself.
 #include "cepo/result.hpp"
 #include "cepo/result/factory.hpp"
 
