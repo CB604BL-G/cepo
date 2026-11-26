@@ -65,6 +65,9 @@ The result is `libcepo.a`. The test workflow is described in
 item generator, public header generator) in
 [script/README.md](script/README.md).
 
+Referenced third-party projects are recorded in
+[`THIRD_PART_LICENCES/`](THIRD_PART_LICENCES/), one file per project.
+
 ---
 
 <a id="简体中文"></a>
@@ -118,3 +121,6 @@ cmake --build .build
 产物为 `libcepo.a`。测试流程见 [test/README.md](test/README.md)，开发脚本
 （测试运行器、测试项生成器、公开头文件生成器）见
 [script/README.md](script/README.md)。
+
+引用的第三方项目记录在 [`THIRD_PART_LICENCES/`](THIRD_PART_LICENCES/)
+目录下，每个项目一个文件。

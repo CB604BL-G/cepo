@@ -1,0 +1,18 @@
+Upstream:  CPP_Defer - https://github.com/UN-chief/CPP_Defer
+Author:    UN-chief
+License:   none declared (SPDX: NOASSERTION)
+Revision:  c8f360aff0b68d3deeadddb753c9bbc0b0e9ea27 (main)
+Reference: include/cepo/defer.hpp
+
+The upstream tree holds only CMakeLists.txt, README.md, include/defer.hpp and
+src/main.cpp, and neither the tree nor the README states license terms. No
+license text can be reproduced here and no grant is inherited from upstream.
+
+Used: the shape of cepo's defer header. A stateless maker struct turns the
+following lambda into the guard through operator+, a const reference holds that
+temporary to the end of the scope, and the declared name is token-pasted from
+__COUNTER__, falling back to __LINE__. The code follows CEPO's own conventions
+and differs where C++11 requires it: the move constructor is defaulted rather
+than deleted, and the lambda carries a trailing return type of -> void.
+
+CEPO's MIT LICENSE covers CEPO's code only and grants nothing from upstream.
