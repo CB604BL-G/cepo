@@ -17,4 +17,10 @@
 #define CEPO_IMPL_NAMESPACE_START namespace cepo { namespace impl {
 #define CEPO_IMPL_NAMESPACE_END } }
 
+#define CEPO_NAMESPACE_START_OF_MODULE(module) namespace cepo { namespace module {
+#define CEPO_NAMESPACE_END_OF_MODULE } }
+
+#define CEPO_IMPL_NAMESPACE_START_OF_MODULE(module) namespace cepo { namespace module { namespace impl {
+#define CEPO_IMPL_NAMESPACE_END_OF_MODULE } } }
+
 #endif //CEPO_CONFIGS_NAMESPACE_MACRO_HPP
