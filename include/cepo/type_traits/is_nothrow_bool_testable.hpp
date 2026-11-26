@@ -14,16 +14,18 @@ template<typename T>
 struct is_nothrow_bool_testable
 {
 private:
+	static void nothrow_bool_convertible(bool) noexcept;
+	
 	template<typename X>
 	static auto can_nothrow_construct_bool(int) ->
-		bool_constant<noexcept((bool(std::declval<X>())))>;
+		bool_constant<noexcept(nothrow_bool_convertible(std::declval<X>()))>;
 
 	template<typename>
 	static std::false_type can_nothrow_construct_bool(...);
 
 	template<typename X>
 	static auto nothrow_not_operable(int) ->
-		bool_constant<noexcept((not std::declval<X>()))>;
+		bool_constant<noexcept(nothrow_bool_convertible(not std::declval<X>()))>;
 
 	template<typename>
 	static std::false_type nothrow_not_operable(...);

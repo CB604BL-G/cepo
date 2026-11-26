@@ -14,12 +14,13 @@ template<typename T>
 struct is_bool_testable
 {
 private:
+	static void bool_convertible(bool);
+	
 	template<typename X>
 	static auto can_construct_bool(int) ->
 		decltype(
-			(bool(std::declval<X>())),
-			std::true_type{}
-		);
+			bool_convertible(std::declval<X>()),
+			std::true_type{});
 
 	template<typename>
 	static std::false_type can_construct_bool(...);
@@ -27,9 +28,8 @@ private:
 	template<typename X>
 	static auto not_operable(int) ->
 		decltype(
-			(not std::declval<X>()),
-			std::true_type{}
-		);
+			bool_convertible(not std::declval<X>()),
+			std::true_type{});
 
 	template<typename>
 	static std::false_type not_operable(...);
